@@ -2,9 +2,16 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const sheets = require('./sheets');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// تعيين Spreadsheet ID
+if (process.env.SPREADSHEET_ID) {
+    sheets.setSpreadsheetId(process.env.SPREADSHEET_ID);
+}
 
 // Middleware
 app.use(cors());
@@ -59,26 +66,33 @@ function writeData(data) {
 // ============ المنتجات ============
 
 // الحصول على جميع المنتجات
-app.get('/api/products', (req, res) => {
-    const data = readData();
-    res.json({ success: true, products: data.products });
+app.get('/api/products', async (req, res) => {
+    try {
+        const products = await sheets.readProducts();
+        res.json({ success: true, products });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'خطأ في قراءة المنتجات' });
+    }
 });
 
 // إضافة منتج جديد
-app.post('/api/products', (req, res) => {
-    const data = readData();
-    const product = {
-        id: Date.now(),
-        ...req.body,
-        createdAt: new Date().toISOString()
-    };
-    
-    data.products.push(product);
-    
-    if (writeData(data)) {
-        res.json({ success: true, product, message: 'تم إضافة المنتج بنجاح' });
-    } else {
-        res.status(500).json({ success: false, message: 'خطأ في حفظ البيانات' });
+app.post('/api/products', async (req, res) => {
+    try {
+        const product = {
+            id: Date.now(),
+            ...req.body,
+            createdAt: new Date().toISOString()
+        };
+        
+        const success = await sheets.writeProduct(product);
+        
+        if (success) {
+            res.json({ success: true, product, message: 'تم إضافة المنتج بنجاح' });
+        } else {
+            res.status(500).json({ success: false, message: 'خطأ في حفظ البيانات' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'خطأ في إضافة المنتج' });
     }
 });
 

@@ -4,12 +4,15 @@ node_modules/
 # Database
 database.json
 
+# Environment variables
+.env
+
+# Google Credentials
+credentials.json
+
 # Logs
 *.log
 npm-debug.log*
-
-# Environment variables
-.env
 
 # OS files
 .DS_Store
