@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>اختبار سريع</title>
+    <style>
+        body { font-family: Arial; padding: 20px; direction: rtl; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+        #log { margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h2>اختبار سريع للـ API</h2>
+    <button onclick="test1()">1. جلب المنتجات</button>
+    <button onclick="test2()">2. إضافة منتج</button>
+    <button onclick="test3()">3. حذف آخر منتج</button>
+    <button onclick="test4()">4. إعادة تحميل الصفحة</button>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        let products = [];
+        
+        function addLog(msg) {
+            log.textContent += '\n' + new Date().toLocaleTimeString() + ' - ' + msg;
+        }
+        
+        async function test1() {
+            addLog('جاري جلب المنتجات...');
+            try {
+                const res = await fetch('http://localhost:3000/api/products');
+                const data = await res.json();
+                products = data.products;
+                addLog(`تم جلب ${products.length} منتج`);
+                addLog(JSON.stringify(products, null, 2));
+            } catch (e) {
+                addLog('خطأ: ' + e.message);
+            }
+        }
+        
+        async function test2() {
+            addLog('جاري إضافة منتج...');
+            try {
+                const product = {
+                    name: 'منتج اختبار ' + Date.now(),
+                    barcode: '999',
+                    description: 'اختبار',
+                    purchasePrice: 50,
+                    sellingPrice: 100,
+                    quantity: 5,
+                    minStock: 2,
+                    category: 'test',
+                    supplier: 'test'
+                };
+                const res = await fetch('http://localhost:3000/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(product)
+                });
+                const data = await res.json();
+                addLog('تم الإضافة: ' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                addLog('خطأ: ' + e.message);
+            }
+        }
+        
+        async function test3() {
+            await test1();
+            if (products.length === 0) {
+                addLog('لا توجد منتجات للحذف');
+                return;
+            }
+            const lastProduct = products[products.length - 1];
+            addLog('جاري حذف المنتج: ' + lastProduct.name + ' (ID: ' + lastProduct.id + ')');
+            try {
+                const res = await fetch('http://localhost:3000/api/products/' + lastProduct.id, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                addLog('تم الحذف: ' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                addLog('خطأ: ' + e.message);
+            }
+        }
+        
+        function test4() {
+            location.reload();
+        }
+        
+        // اختبار تلقائي عند التحميل
+        window.onload = () => {
+            addLog('الصفحة تم تحميلها بنجاح');
+            test1();
+        };
+    </script>
+</body>
+</html>
