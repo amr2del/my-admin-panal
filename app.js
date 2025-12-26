@@ -28,6 +28,21 @@ async function initializeApp() {
     
     // فحص المخزون المنخفض وتنبيه
     checkLowStockAlert();
+    
+    // إضافة زر لملء البيانات التجريبية (يظهر فقط إذا كانت المنتجات فارغة)
+    if (products.length === 0) {
+        const fillButton = document.createElement('button');
+        fillButton.innerHTML = '<i class="fas fa-database"></i> ملء بيانات تجريبية';
+        fillButton.className = 'btn btn-primary';
+        fillButton.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 15px 25px; font-size: 16px;';
+        fillButton.onclick = async () => {
+            fillButton.disabled = true;
+            fillButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الملء...';
+            await initializeSheets();
+            fillButton.remove();
+        };
+        document.body.appendChild(fillButton);
+    }
 }
 
 // تحميل التطبيق عند فتح الصفحة
