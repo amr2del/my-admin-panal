@@ -132,6 +132,17 @@
             <div class="page-header">
                 <h1 class="page-title">لوحة التحكم</h1>
                 <p class="page-subtitle">مرحباً بك! إليك نظرة عامة على نشاط اليوم</p>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn btn-success" onclick="exportInventoryPDF()">
+                        <i class="fas fa-file-pdf"></i> تصدير المخزون PDF
+                    </button>
+                    <button class="btn btn-primary" onclick="exportSalesPDF()">
+                        <i class="fas fa-file-pdf"></i> تصدير المبيعات PDF
+                    </button>
+                    <button class="btn btn-warning" onclick="exportFinancialReportPDF()">
+                        <i class="fas fa-file-pdf"></i> تقرير مالي PDF
+                    </button>
+                </div>
             </div>
 
             <div class="stats-grid">
@@ -764,7 +775,11 @@
         </div>
     </div>
 
+    <!-- jsPDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="sheets-api.js"></script>
     <script src="app.js"></script>
+    <script src="pdf-export.js"></script>
 </body>
 </html>
