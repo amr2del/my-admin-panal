@@ -710,13 +710,15 @@ async function completeSale() {
     const result = await saveSaleToAPI(sale);
     
     if (result.success) {
-        // تحديث المخزون المحلي
-        cart.forEach(cartItem => {
+        // تحديث المخزون في قاعدة البيانات
+        for (const cartItem of cart) {
             const product = products.find(p => p.id === cartItem.id);
             if (product) {
-                product.quantity -= cartItem.quantity;
+                const newQuantity = product.quantity - cartItem.quantity;
+                await updateProductInAPI(product.id, { quantity: newQuantity });
+                product.quantity = newQuantity;
             }
-        });
+        }
         
         sales.push(result.sale);
         
