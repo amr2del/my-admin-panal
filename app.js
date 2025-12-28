@@ -681,7 +681,7 @@ async function completeSale() {
         return;
     }
     
-    const customerName = document.getElementById('customerName').value || 'عميل';
+    const customerName = document.getElementById('customerName').value || 'عميل نقدي';
     const customerPhone = document.getElementById('customerPhone').value || '';
     const paymentMethod = document.getElementById('paymentMethod').value;
     const discount = parseFloat(document.getElementById('discount').value || 0);

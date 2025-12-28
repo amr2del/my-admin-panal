@@ -111,7 +111,8 @@ function getProducts() {
 function addProduct(product) {
   const sheet = getSheet('Products');
   const id = Date.now();
-  const createdAt = new Date().toISOString();
+  const now = new Date();
+  const createdAt = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   
   sheet.appendRow([
     id,
@@ -141,7 +142,8 @@ function updateProduct(productId, updates) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == productId) {
       const rowIndex = i + 1;
-      const updatedAt = new Date().toISOString();
+      const now = new Date();
+      const updatedAt = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
       
       // تحديث البيانات
       if (updates.name !== undefined) sheet.getRange(rowIndex, 2).setValue(updates.name);
@@ -221,22 +223,30 @@ function getSales() {
 function addSale(sale) {
   const sheet = getSheet('Sales');
   const id = Date.now();
-  const date = new Date().toISOString();
+  const now = new Date();
+  
+  // تنسيق التاريخ بشكل أكثر قابلية للقراءة
+  const dateFormatted = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  
+  // تنسيق الأصناف بشكل قابل للقراءة
+  const itemsFormatted = sale.items.map(item => 
+    `${item.name} (${item.price} ج.م × ${item.quantity})`
+  ).join(' | ');
   
   sheet.appendRow([
     id,
-    date,
-    sale.customer || '',
+    dateFormatted,
+    sale.customer || 'عميل نقدي',
     sale.phone || '',
-    JSON.stringify(sale.items),
+    itemsFormatted,
     sale.subtotal,
     sale.discount || 0,
     sale.total,
-    sale.paymentMethod || ''
+    sale.paymentMethod || 'cash'
   ]);
   
   sale.id = id;
-  sale.date = date;
+  sale.date = dateFormatted;
   
   return { success: true, sale: sale, message: 'تمت عملية البيع بنجاح' };
 }
