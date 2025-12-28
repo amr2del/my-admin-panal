@@ -2,24 +2,76 @@
 let products = [];
 let sales = [];
 
+// Loading Progress Functions
+function showLoading(message = 'جاري تحميل البيانات...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = overlay.querySelector('.loading-text');
+    const progressBar = document.getElementById('loadingProgressBar');
+    
+    if (text) text.textContent = message;
+    if (progressBar) progressBar.style.width = '0%';
+    
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+}
+
+function updateLoadingProgress(percent) {
+    const progressBar = document.getElementById('loadingProgressBar');
+    if (progressBar) {
+        progressBar.style.width = percent + '%';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    const progressBar = document.getElementById('loadingProgressBar');
+    
+    if (progressBar) progressBar.style.width = '100%';
+    
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 400);
+    }, 300);
+}
+
 // تهيئة البيانات عند تحميل الصفحة
 async function initializeApp() {
+    showLoading('جاري تهيئة التطبيق...');
+    updateLoadingProgress(10);
+    
+    // Hide sidebar on mobile by default
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.add('collapsed');
+    }
+    
     // إخفاء النوافذ المنبثقة بشكل صريح
     const addModal = document.getElementById('addProductModal');
     const editModal = document.getElementById('editProductModal');
     if (addModal) addModal.style.display = 'none';
     if (editModal) editModal.style.display = 'none';
     
+    updateLoadingProgress(30);
+    
     // تحميل البيانات من API
+    showLoading('جاري تحميل المنتجات...');
     await loadProductsFromAPI();
+    updateLoadingProgress(60);
+    
+    showLoading('جاري تحميل المبيعات...');
     await loadSalesFromAPI();
+    updateLoadingProgress(80);
     
     // تحديث العرض
+    showLoading('جاري تحديث واجهة المستخدم...');
     updateDashboard();
     displayProducts();
     displayPOSProducts(); // تحديث عرض الكاشير
     updateCapitalDisplay();
     updateAvatarDisplay();
+    updateLoadingProgress(95);
     
     // إضافة بيانات تجريبية إذا كانت القائمة فارغة
     if (products.length === 0) {
@@ -28,20 +80,63 @@ async function initializeApp() {
     
     // فحص المخزون المنخفض وتنبيه
     checkLowStockAlert();
+    
+    updateLoadingProgress(100);
+    hideLoading();
 }
 
 // تحميل التطبيق عند فتح الصفحة
 window.addEventListener('DOMContentLoaded', initializeApp);
 
+// Handle window resize
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    // On larger screens, remove collapsed class and hide overlay
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('collapsed');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    } else {
+        // On mobile, ensure sidebar is collapsed by default
+        sidebar.classList.add('collapsed');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+});
+
 // Toggle Sidebar
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
     const header = document.getElementById('header');
     const mainContent = document.getElementById('mainContent');
     
     sidebar.classList.toggle('collapsed');
     header.classList.toggle('full-width');
     mainContent.classList.toggle('full-width');
+    
+    // Show/hide overlay on mobile
+    if (window.innerWidth <= 768) {
+        overlay.classList.toggle('active');
+        // Prevent body scroll when sidebar is open
+        if (!sidebar.classList.contains('collapsed')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+}
+
+// Close Sidebar (for mobile)
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.add('collapsed');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 // عرض التبويب
@@ -58,6 +153,11 @@ async function showTab(tabName) {
     document.getElementById(tabName).classList.add('active');
     if (event && event.target) {
         event.target.closest('.nav-link').classList.add('active');
+    }
+    
+    // Close sidebar on mobile after selecting a tab
+    if (window.innerWidth <= 768) {
+        closeSidebar();
     }
 
     // تحديث البيانات
@@ -97,7 +197,9 @@ async function addProduct(event) {
         supplier: document.getElementById('supplier').value
     };
 
+    showLoading('جاري إضافة المنتج...');
     const result = await saveProductToAPI(product);
+    hideLoading();
     
     if (result.success) {
         products.push(result.product);
@@ -240,7 +342,9 @@ function filterProducts() {
 // حذف منتج
 async function deleteProduct(id) {
     if (await customConfirm('سيتم حذف هذا المنتج نهائياً من النظام', 'حذف المنتج', 'danger')) {
+        showLoading('جاري حذف المنتج...');
         const result = await deleteProductFromAPI(id);
+        hideLoading();
         
         if (result.success) {
             products = products.filter(p => p.id !== id);
@@ -1108,6 +1212,45 @@ function updateCapitalDisplay() {
     if (capitalElement) {
         capitalElement.textContent = totalCapital.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
     }
+    
+    // Update modal values
+    const modalCapital = document.getElementById('modalTotalCapital');
+    const modalProducts = document.getElementById('modalTotalProducts');
+    const modalQuantity = document.getElementById('modalTotalQuantity');
+    const modalAvgPrice = document.getElementById('modalAvgPrice');
+    
+    if (modalCapital) {
+        modalCapital.textContent = totalCapital.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+    }
+    
+    if (modalProducts) {
+        modalProducts.textContent = products.length;
+    }
+    
+    const totalQuantity = products.reduce((sum, p) => sum + (parseInt(p.quantity) || 0), 0);
+    if (modalQuantity) {
+        modalQuantity.textContent = totalQuantity.toLocaleString('ar-EG');
+    }
+    
+    const avgPrice = products.length > 0 ? totalCapital / totalQuantity : 0;
+    if (modalAvgPrice) {
+        modalAvgPrice.textContent = avgPrice.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+    }
+}
+
+// Toggle Capital Modal
+function toggleCapitalModal() {
+    const modal = document.getElementById('capitalModal');
+    if (modal) {
+        if (modal.classList.contains('active')) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        } else {
+            updateCapitalDisplay(); // Update values before showing
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
 }
 
 async function exportData() {
@@ -1500,6 +1643,25 @@ document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('notificationsDropdown');
     if (!dropdown.contains(e.target)) {
         dropdown.classList.remove('show');
+    }
+    
+    // Close capital modal when clicking outside
+    const capitalModal = document.getElementById('capitalModal');
+    if (capitalModal && capitalModal.classList.contains('active')) {
+        const modalContent = capitalModal.querySelector('.capital-modal-content');
+        if (!modalContent.contains(e.target) && !e.target.closest('.capital-display')) {
+            toggleCapitalModal();
+        }
+    }
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const capitalModal = document.getElementById('capitalModal');
+        if (capitalModal && capitalModal.classList.contains('active')) {
+            toggleCapitalModal();
+        }
     }
 });
 

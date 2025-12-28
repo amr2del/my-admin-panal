@@ -8,6 +8,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Sidebar Overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text">جاري تحميل البيانات...</p>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="loadingProgressBar"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -60,11 +74,61 @@
                 <i class="fas fa-cash-register"></i>
                 <span>كاشير</span>
             </div>
-            <div class="capital-display">
+            <div class="capital-display" onclick="toggleCapitalModal()" style="cursor: pointer;" title="اضغط لعرض التفاصيل">
                 <i class="fas fa-wallet"></i>
                 <div class="capital-info">
                     <span class="capital-label">رأس المال</span>
                     <span class="capital-amount" id="totalCapital">0 ج.م</span>
+                </div>
+            </div>
+            
+            <!-- Capital Details Modal -->
+            <div class="capital-modal" id="capitalModal">
+                <div class="capital-modal-content">
+                    <div class="capital-modal-header">
+                        <h2><i class="fas fa-wallet"></i> تفاصيل رأس المال</h2>
+                        <button class="modal-close" onclick="toggleCapitalModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="capital-modal-body">
+                        <div class="capital-detail-card">
+                            <div class="capital-icon">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="capital-detail">
+                                <span class="capital-detail-label">رأس المال الكلي</span>
+                                <span class="capital-detail-value" id="modalTotalCapital">0 ج.م</span>
+                            </div>
+                        </div>
+                        <div class="capital-detail-card">
+                            <div class="capital-icon green">
+                                <i class="fas fa-cubes"></i>
+                            </div>
+                            <div class="capital-detail">
+                                <span class="capital-detail-label">عدد المنتجات</span>
+                                <span class="capital-detail-value" id="modalTotalProducts">0</span>
+                            </div>
+                        </div>
+                        <div class="capital-detail-card">
+                            <div class="capital-icon blue">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="capital-detail">
+                                <span class="capital-detail-label">إجمالي الكميات</span>
+                                <span class="capital-detail-value" id="modalTotalQuantity">0</span>
+                            </div>
+                        </div>
+                        <div class="capital-detail-card">
+                            <div class="capital-icon orange">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="capital-detail">
+                                <span class="capital-detail-label">متوسط سعر الشراء</span>
+                                <span class="capital-detail-value" id="modalAvgPrice">0 ج.م</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,15 +196,15 @@
             <div class="page-header">
                 <h1 class="page-title">لوحة التحكم</h1>
                 <p class="page-subtitle">مرحباً بك! إليك نظرة عامة على نشاط اليوم</p>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-success" onclick="exportInventoryPDF()">
-                        <i class="fas fa-file-pdf"></i> تصدير المخزون PDF
+                <div class="export-buttons" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-success btn-export" onclick="exportInventoryPDF()">
+                        <i class="fas fa-file-pdf"></i> <span>تصدير المخزون PDF</span>
                     </button>
-                    <button class="btn btn-primary" onclick="exportSalesPDF()">
-                        <i class="fas fa-file-pdf"></i> تصدير المبيعات PDF
+                    <button class="btn btn-primary btn-export" onclick="exportSalesPDF()">
+                        <i class="fas fa-file-pdf"></i> <span>تصدير المبيعات PDF</span>
                     </button>
-                    <button class="btn btn-warning" onclick="exportFinancialReportPDF()">
-                        <i class="fas fa-file-pdf"></i> تقرير مالي PDF
+                    <button class="btn btn-warning btn-export" onclick="exportFinancialReportPDF()">
+                        <i class="fas fa-file-pdf"></i> <span>تقرير مالي PDF</span>
                     </button>
                 </div>
             </div>
@@ -780,5 +844,13 @@
     <script src="sheets-api.js"></script>
     <script src="app.js"></script>
     <script src="pdf-export.js"></script>
+    
+    <!-- Initialize sidebar state on page load -->
+    <script>
+        // Ensure sidebar starts collapsed on mobile
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.add('collapsed');
+        }
+    </script>
 </body>
 </html>
