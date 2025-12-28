@@ -7,9 +7,8 @@ async function appsScriptRequest(action, data = {}) {
     try {
         const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify({
                 action: action,
@@ -17,9 +16,8 @@ async function appsScriptRequest(action, data = {}) {
             })
         });
         
-        // في وضع no-cors، لن نحصل على response body
-        // لذلك نفترض أن العملية نجحت
-        return { success: true };
+        const result = await response.json();
+        return result;
     } catch (error) {
         console.error('خطأ في الاتصال بـ Google Sheets:', error);
         showAlert('error', '❌ خطأ في الاتصال. تحقق من الإنترنت.');

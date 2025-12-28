@@ -1097,7 +1097,9 @@ async function saveShopInfo(event) {
 function updateCapitalDisplay() {
     // حساب إجمالي رأس المال = إجمالي قيمة المشتريات لجميع المنتجات
     const totalCapital = products.reduce((sum, product) => {
-        return sum + (product.purchasePrice * product.quantity);
+        const purchasePrice = parseFloat(product.purchasePrice) || 0;
+        const quantity = parseInt(product.quantity) || 0;
+        return sum + (purchasePrice * quantity);
     }, 0);
     
     const capitalElement = document.getElementById('totalCapital');
