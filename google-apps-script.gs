@@ -65,6 +65,12 @@ function doPost(e) {
   }
 }
 
+// معالجة OPTIONS (CORS Preflight)
+function doOptions(e) {
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
 // معالجة GET (للاختبار)
 function doGet(e) {
   return ContentService.createTextOutput('Google Apps Script is running!')
