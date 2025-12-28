@@ -730,9 +730,9 @@ async function completeSale() {
         
         showAlert('success', `✅ تم إتمام عملية البيع بنجاح! المبلغ الإجمالي: ${total.toFixed(2)} ج.م`);
         
-        // طباعة الفاتورة (استخدام result.sale الذي يحتوي على ID)
-        customConfirm('هل تريد طباعة فاتورة البيع الآن؟', 'طباعة الفاتورة', 'info').then(confirmed => {
-            if (confirmed) {
+        // طباعة الفاتورة
+        customConfirm('هل تريد طباعة فاتورة البيع الآن؟', 'طباعة الفاتورة', 'info').then(confirmResult => {
+            if (confirmResult) {
                 printInvoice(result.sale);
             }
         });
@@ -943,7 +943,6 @@ function displayRecentSales() {
                     <th style="padding: 12px; text-align: right;">عدد الأصناف</th>
                     <th style="padding: 12px; text-align: right;">المبلغ</th>
                     <th style="padding: 12px; text-align: right;">طريقة الدفع</th>
-                    <th style="padding: 12px; text-align: right;">إجراءات</th>
                 </tr>
             </thead>
             <tbody>
@@ -955,11 +954,6 @@ function displayRecentSales() {
                         <td style="padding: 12px;">${sale.items.length}</td>
                         <td style="padding: 12px; font-weight: 700; color: var(--success);">${sale.total.toFixed(2)} ج.م</td>
                         <td style="padding: 12px;">${sale.paymentMethod === 'cash' ? '💵 نقدي' : sale.paymentMethod === 'card' ? '💳 بطاقة' : '📅 تقسيط'}</td>
-                        <td style="padding: 12px;">
-                            <button class="btn btn-danger btn-icon" onclick="deleteSale(${sale.id})" title="حذف الفاتورة" style="width: 32px; height: 32px; padding: 0; font-size: 12px;">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -985,42 +979,6 @@ function exportSales() {
     link.click();
     
     showAlert('success', 'تم تصدير المبيعات بنجاح!');
-}
-
-// حذف فاتورة
-async function deleteSale(saleId) {
-    const sale = sales.find(s => s.id === saleId);
-    if (!sale) {
-        showAlert('error', 'الفاتورة غير موجودة!');
-        return;
-    }
-    
-    if (await customConfirm(`سيتم حذف الفاتورة #${saleId} وإرجاع الكميات للمخزون`, 'حذف الفاتورة', 'danger')) {
-        const result = await deleteSaleFromAPI(saleId);
-        
-        if (result.success) {
-            // إرجاع الكميات للمخزون
-            sale.items.forEach(item => {
-                const product = products.find(p => p.id === item.productId);
-                if (product) {
-                    product.quantity += item.quantity;
-                    // تحديث المنتج في API
-                    updateProductInAPI(product.id, { quantity: product.quantity });
-                }
-            });
-            
-            // إزالة الفاتورة من القائمة
-            sales = sales.filter(s => s.id !== saleId);
-            
-            showAlert('success', '✅ تم حذف الفاتورة وإرجاع الكميات للمخزون');
-            displayRecentSales();
-            updateDashboard();
-            updateReports();
-            displayProducts();
-        } else {
-            showAlert('error', '❌ فشل في حذف الفاتورة');
-        }
-    }
 }
 
 // ===== Settings Functions =====
