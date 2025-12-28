@@ -1,6 +1,6 @@
 // ============ Google Apps Script API ============
 // رابط Web App من Google Apps Script
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzivjwD8FzKk214mtneg_UYTI3szxBYyas39gm55k_HvUGL5XuajNn_4doZ04Z0oAW3Tg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJz1KunrpFnEy1KkQP1fWw4VnNfDvs9DNd7Hqm7cA2n8qlsfvMqegbpnSbysUb14jpWg/exec';
 
 // دالة مساعدة للطلبات
 async function appsScriptRequest(action, data = {}) {

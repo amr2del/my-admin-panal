@@ -203,16 +203,25 @@ function getSales() {
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     if (row[0]) {
+      // التحقق من وجود عمود items JSON (العمود 6)
+      let items = [];
+      try {
+        items = JSON.parse(row[5] || '[]');
+      } catch (e) {
+        // إذا فشل التحليل، نستخدم مصفوفة فارغة
+        items = [];
+      }
+      
       sales.push({
         id: row[0],
         date: row[1],
         customer: row[2] || '',
         phone: row[3] || '',
-        items: JSON.parse(row[4] || '[]'),
-        subtotal: parseFloat(row[5]) || 0,
-        discount: parseFloat(row[6]) || 0,
-        total: parseFloat(row[7]) || 0,
-        paymentMethod: row[8] || ''
+        items: items,
+        subtotal: parseFloat(row[6]) || 0,
+        discount: parseFloat(row[7]) || 0,
+        total: parseFloat(row[8]) || 0,
+        paymentMethod: row[9] || ''
       });
     }
   }
@@ -228,17 +237,21 @@ function addSale(sale) {
   // تنسيق التاريخ بشكل أكثر قابلية للقراءة
   const dateFormatted = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   
-  // تنسيق الأصناف بشكل قابل للقراءة
+  // تنسيق الأصناف بشكل قابل للقراءة للعرض
   const itemsFormatted = sale.items.map(item => 
     `${item.name} (${item.price} ج.م × ${item.quantity})`
   ).join(' | ');
+  
+  // حفظ items كـ JSON في عمود منفصل للقراءة
+  const itemsJSON = JSON.stringify(sale.items);
   
   sheet.appendRow([
     id,
     dateFormatted,
     sale.customer || 'عميل نقدي',
     sale.phone || '',
-    itemsFormatted,
+    itemsFormatted,      // للعرض في Google Sheets
+    itemsJSON,           // للقراءة من التطبيق
     sale.subtotal,
     sale.discount || 0,
     sale.total,
