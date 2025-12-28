@@ -730,10 +730,10 @@ async function completeSale() {
         
         showAlert('success', `✅ تم إتمام عملية البيع بنجاح! المبلغ الإجمالي: ${total.toFixed(2)} ج.م`);
         
-        // طباعة الفاتورة
-        customConfirm('هل تريد طباعة فاتورة البيع الآن؟', 'طباعة الفاتورة', 'info').then(result => {
-            if (result) {
-                printInvoice(sale);
+        // طباعة الفاتورة (استخدام result.sale الذي يحتوي على ID)
+        customConfirm('هل تريد طباعة فاتورة البيع الآن؟', 'طباعة الفاتورة', 'info').then(confirmed => {
+            if (confirmed) {
+                printInvoice(result.sale);
             }
         });
     } else {
