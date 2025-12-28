@@ -1,4 +1,12 @@
-# 🚀 إعداد Google Sheets للمشروع
+# 🚀 إعداد Google Sheets و Google Apps Script
+
+## ✅ المعلومات الحالية:
+
+- **Google Sheet URL:** https://docs.google.com/spreadsheets/d/1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0/edit
+- **Spreadsheet ID:** `1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0`
+- **Web App URL:** https://script.google.com/macros/s/AKfycbwcMMu9_ygUFbii_cRm77sWTU-7UTfuuWXbmTKyuSo7YKorjXSpb6TgLb2Uzpdg1sqzYg/exec
+
+---
 
 ## الخطوات:
 
@@ -42,62 +50,64 @@ currency         ج.م
 - من رابط Sheet: 
   `https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit`
 - انسخ الـ ID من الرابط
+- **المستخدم حالياً:** `1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0`
 
-### 4. إعداد Google Cloud Console:
+### 4. إعداد Google Apps Script:
 
-1. اذهب إلى: https://console.cloud.google.com
-2. اضغط "Select a project" → "New Project"
-3. اسم المشروع: **Spare Parts Admin**
-4. اضغط "Create"
+1. افتح Google Sheet الخاص بك
+2. من القائمة: **Extensions** → **Apps Script**
+3. امسح الكود الافتراضي
+4. انسخ كل محتوى ملف `google-apps-script.gs` من المشروع
+5. الصق الكود في Google Apps Script Editor
+6. احفظ المشروع (Ctrl+S)
+7. سمّ المشروع: **Spare Parts API**
 
-### 5. تفعيل Google Sheets API:
+### 5. نشر Web App:
 
-1. من القائمة → "APIs & Services" → "Library"
-2. ابحث عن: **Google Sheets API**
-3. اضغط "Enable"
+1. اضغط "Deploy" → "New deployment"
+2. اضغط على أيقونة الترس ⚙️ بجانب "Select type"
+3. اختر **Web app**
+4. الإعدادات:
+   - **Description:** API للمشروع
+   - **Execute as:** Me (your email)
+   - **Who has access:** Anyone
+5. اضغط "Deploy"
+6. اضغط "Authorize access"
+7. اختر حسابك في Google
+8. اضغط "Advanced" → "Go to [Project Name] (unsafe)"
+9. اضغط "Allow"
+10. انسخ **Web app URL** (سيبدأ بـ `https://script.google.com/macros/s/...`)
 
-### 6. إنشاء Service Account:
+### 6. تحديث الكود:
 
-1. "APIs & Services" → "Credentials"
-2. "Create Credentials" → "Service Account"
-3. الاسم: **sheets-api-service**
-4. اضغط "Create and Continue"
-5. Role: **Editor**
-6. اضغط "Done"
-
-### 7. إنشاء Key:
-
-1. اضغط على Service Account الجديد
-2. "Keys" → "Add Key" → "Create new key"
-3. نوع: **JSON**
-4. اضغط "Create"
-5. سيتم تنزيل ملف JSON
-6. أعد تسمية الملف إلى: **credentials.json**
-7. ضعه في مجلد المشروع: `d:\Coding\my admin\`
-
-### 8. مشاركة Sheet مع Service Account:
-
-1. افتح Google Sheet
-2. اضغط "مشاركة"
-3. الصق الإيميل من Service Account (من ملف credentials.json)
-   - يبدأ بـ: `sheets-api-service@...`
-4. الصلاحية: **Editor**
-5. اضغط "إرسال"
-
-### 9. تحديث ملف .env:
-
-أنشئ ملف `.env` في المشروع:
+في ملف `google-apps-script.gs`:
+```javascript
+const SPREADSHEET_ID = '1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0';
 ```
-SPREADSHEET_ID=الصق_هنا_ID_الSheet
+
+في ملف `sheets-api.js`:
+```javascript
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcMMu9_ygUFbii_cRm77sWTU-7UTfuuWXbmTKyuSo7YKorjXSpb6TgLb2Uzpdg1sqzYg/exec';
 ```
+
+---
+
+## ⚠️ ملاحظات هامة:
+
+- لا تحتاج إلى Google Cloud Console أو Service Account
+- لا تحتاج إلى ملف credentials.json
+- كل شيء يعمل من خلال Google Apps Script مباشرة
+- التطبيق يعمل Frontend Only بدون سيرفر
 
 ---
 
 ## ✅ بعد الانتهاء:
 
-شغّل السيرفر:
+افتح ملف `index.html` في المتصفح أو استخدم Live Server في VS Code:
 ```bash
-npm start
+# إذا كان لديك Live Server extension
+# اضغط بزر الماوس الأيمن على index.html
+# واختر "Open with Live Server"
 ```
 
 الآن البيانات تُحفظ في Google Sheets! 🎉
