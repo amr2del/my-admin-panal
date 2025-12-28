@@ -131,7 +131,7 @@ https://[username].github.io/[repository-name]/
 
 - **التطبيق:** https://amr2del.github.io/my-admin-panal/
 - **Google Sheet:** [رابط الـ Sheet](https://docs.google.com/spreadsheets/d/1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0/edit)
-- **Web App URL:** [رابط Web App](https://script.google.com/macros/s/AKfycbx54ignCVs1bDZB6srlXeY2caxbxAlKuyV1gYEBxtuNUB1G5jzB8uftDVzmk__fX75zbw/exec)
+- **Web App URL:** [رابط Web App](https://script.google.com/macros/s/AKfycbzivjwD8FzKk214mtneg_UYTI3szxBYyas39gm55k_HvUGL5XuajNn_4doZ04Z0oAW3Tg/exec)
 
 ## 📁 هيكل المشروع
 

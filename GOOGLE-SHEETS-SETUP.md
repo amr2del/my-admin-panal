@@ -4,7 +4,7 @@
 
 - **Google Sheet URL:** https://docs.google.com/spreadsheets/d/1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0/edit
 - **Spreadsheet ID:** `1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0`
-- **Web App URL:** https://script.google.com/macros/s/AKfycbx54ignCVs1bDZB6srlXeY2caxbxAlKuyV1gYEBxtuNUB1G5jzB8uftDVzmk__fX75zbw/exec
+- **Web App URL:** https://script.google.com/macros/s/AKfycbzivjwD8FzKk214mtneg_UYTI3szxBYyas39gm55k_HvUGL5XuajNn_4doZ04Z0oAW3Tg/exec
 
 ---
 
@@ -87,7 +87,7 @@ const SPREADSHEET_ID = '1xiT2-lTmDLsDRI0KhouJhwlBMjbh5aYZzpPYYk-XRU0';
 
 في ملف `sheets-api.js`:
 ```javascript
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx54ignCVs1bDZB6srlXeY2caxbxAlKuyV1gYEBxtuNUB1G5jzB8uftDVzmk__fX75zbw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzivjwD8FzKk214mtneg_UYTI3szxBYyas39gm55k_HvUGL5XuajNn_4doZ04Z0oAW3Tg/exec';
 ```
 
 ---
