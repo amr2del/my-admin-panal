@@ -65,19 +65,28 @@ async function initializeApp() {
     updateLoadingProgress(60);
     
     // تحميل بيانات features إذا كانت الدالة موجودة
-    if (typeof initializeFeatures === 'function') {
-        showLoading('جاري تحميل البيانات الإضافية...');
-        await initializeFeatures();
+    try {
+        if (typeof initializeFeatures === 'function') {
+            showLoading('جاري تحميل البيانات الإضافية...');
+            await initializeFeatures();
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل البيانات الإضافية:', error);
+        // استمر في التحميل حتى لو في خطأ
     }
     updateLoadingProgress(80);
     
     // تحديث العرض
     showLoading('جاري تحديث واجهة المستخدم...');
-    updateDashboard();
-    displayProducts();
-    displayPOSProducts(); // تحديث عرض الكاشير
-    updateCapitalDisplay();
-    updateAvatarDisplay();
+    try {
+        updateDashboard();
+        displayProducts();
+        displayPOSProducts(); // تحديث عرض الكاشير
+        updateCapitalDisplay();
+        updateAvatarDisplay();
+    } catch (error) {
+        console.error('خطأ في تحديث الواجهة:', error);
+    }
     updateLoadingProgress(95);
     
     // إضافة بيانات تجريبية إذا كانت القائمة فارغة
