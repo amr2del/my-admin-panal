@@ -2,6 +2,24 @@
 let products = [];
 let sales = [];
 
+// دالة لتعطيل/تفعيل الأزرار أثناء العمليات
+function setButtonLoading(button, isLoading, loadingText = 'جاري التنفيذ...') {
+    if (!button) return;
+    
+    if (isLoading) {
+        button.disabled = true;
+        button.dataset.originalText = button.innerHTML;
+        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+        button.style.opacity = '0.7';
+        button.style.cursor = 'not-allowed';
+    } else {
+        button.disabled = false;
+        button.innerHTML = button.dataset.originalText || button.innerHTML;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+    }
+}
+
 // Loading Progress Functions
 function showLoading(message = 'جاري تحميل البيانات...') {
     const overlay = document.getElementById('loadingOverlay');
@@ -234,6 +252,9 @@ async function showTab(tabName) {
 // إضافة منتج جديد
 async function addProduct(event) {
     event.preventDefault();
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    setButtonLoading(submitBtn, true, 'جاري الإضافة...');
 
     const product = {
         name: document.getElementById('productName').value,
@@ -250,6 +271,7 @@ async function addProduct(event) {
     showLoading('جاري إضافة المنتج...');
     const result = await saveProductToAPI(product);
     hideLoading();
+    setButtonLoading(submitBtn, false);
     
     if (result.success) {
         products.push(result.product);
@@ -949,6 +971,10 @@ async function completeSale() {
         return;
     }
     
+    // العثور على زر إتمام البيع
+    const saleBtn = document.querySelector('.complete-sale-btn');
+    setButtonLoading(saleBtn, true, 'جاري إتمام البيع...');
+    
     const customerName = document.getElementById('customerName').value || 'عميل نقدي';
     const customerPhone = document.getElementById('customerPhone').value || '';
     const paymentMethod = document.getElementById('paymentMethod').value;
@@ -1001,6 +1027,7 @@ async function completeSale() {
         document.getElementById('customerPhone').value = '';
         document.getElementById('discount').value = '0';
         
+        setButtonLoading(saleBtn, false);
         showAlert('success', `✅ تم إتمام عملية البيع بنجاح! المبلغ الإجمالي: ${total.toFixed(2)} ج.م`);
         
         // طباعة الفاتورة
@@ -1010,6 +1037,7 @@ async function completeSale() {
             }
         });
     } else {
+        setButtonLoading(saleBtn, false);
         showAlert('error', '❌ فشل في إتمام عملية البيع');
     }
 }

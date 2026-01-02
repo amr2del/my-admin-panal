@@ -259,6 +259,11 @@ function closeExpenseModal() {
 async function addExpense(event) {
     event.preventDefault();
     
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    if (typeof setButtonLoading === 'function') {
+        setButtonLoading(submitBtn, true, 'جاري الحفظ...');
+    }
+    
     const expense = {
         id: Date.now(),
         type: document.getElementById('expenseType').value,
@@ -271,6 +276,10 @@ async function addExpense(event) {
     expenses.push(expense);
     window.expenses = expenses;
     await saveExpensesToAPI();
+    
+    if (typeof setButtonLoading === 'function') {
+        setButtonLoading(submitBtn, false);
+    }
     
     showAlert('success', '✅ تم إضافة المصروف بنجاح!');
     closeExpenseModal();
@@ -387,6 +396,11 @@ function closeCustomerModal() {
 async function addCustomer(event) {
     event.preventDefault();
     
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    if (typeof setButtonLoading === 'function') {
+        setButtonLoading(submitBtn, true, 'جاري الحفظ...');
+    }
+    
     const customer = {
         id: Date.now(),
         name: document.getElementById('newCustomerName').value,
@@ -402,6 +416,10 @@ async function addCustomer(event) {
     customers.push(customer);
     window.customers = customers;
     await saveCustomersToAPI();
+    
+    if (typeof setButtonLoading === 'function') {
+        setButtonLoading(submitBtn, false);
+    }
     
     showAlert('success', '✅ تم إضافة العميل بنجاح!');
     closeCustomerModal();
