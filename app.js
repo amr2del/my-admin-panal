@@ -62,6 +62,13 @@ async function initializeApp() {
     
     showLoading('جاري تحميل المبيعات...');
     await loadSalesFromAPI();
+    updateLoadingProgress(60);
+    
+    // تحميل بيانات features إذا كانت الدالة موجودة
+    if (typeof initializeFeatures === 'function') {
+        showLoading('جاري تحميل البيانات الإضافية...');
+        await initializeFeatures();
+    }
     updateLoadingProgress(80);
     
     // تحديث العرض
@@ -462,35 +469,49 @@ function updateDashboard() {
     document.getElementById('todaySales').textContent = todaySalesTotal.toFixed(2) + ' ج.م';
 
     // حساب العملاء (من features.js)
-    const customers = window.customersData || [];
+    const customers = window.customers || [];
     const totalCustomers = customers.length;
-    document.getElementById('dashTotalCustomers').textContent = totalCustomers;
+    const dashTotalCustomersEl = document.getElementById('dashTotalCustomers');
+    if (dashTotalCustomersEl) dashTotalCustomersEl.textContent = totalCustomers;
 
     // حساب المصروفات اليوم
-    const expenses = window.expensesData || [];
-    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === today);
+    const expenses = window.expenses || [];
+    const todayExpenses = expenses.filter(e => {
+        if (!e.date) return false;
+        try {
+            return new Date(e.date).toDateString() === today;
+        } catch (err) {
+            return false;
+        }
+    });
     const todayExpensesTotal = todayExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-    document.getElementById('dashExpensesToday').textContent = todayExpensesTotal.toFixed(2) + ' ج.م';
+    const dashExpensesEl = document.getElementById('dashExpensesToday');
+    if (dashExpensesEl) dashExpensesEl.textContent = todayExpensesTotal.toFixed(2) + ' ج.م';
 
     // حساب صافي الربح (مبيعات اليوم - مصروفات اليوم)
     const netProfit = todaySalesTotal - todayExpensesTotal;
     const netProfitElement = document.getElementById('dashNetProfit');
-    netProfitElement.textContent = netProfit.toFixed(2) + ' ج.م';
-    
-    // تغيير لون البطاقة حسب الربح
-    const profitCard = netProfitElement.closest('.stat-card');
-    if (netProfit < 0) {
-        profitCard.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-    } else if (netProfit === 0) {
-        profitCard.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-    } else {
-        profitCard.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    if (netProfitElement) {
+        netProfitElement.textContent = netProfit.toFixed(2) + ' ج.م';
+        
+        // تغيير لون البطاقة حسب الربح
+        const profitCard = netProfitElement.closest('.stat-card');
+        if (profitCard) {
+            if (netProfit < 0) {
+                profitCard.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            } else if (netProfit === 0) {
+                profitCard.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+            } else {
+                profitCard.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            }
+        }
     }
 
     // حساب الديون
-    const debts = window.debtsData || [];
+    const debts = window.debts || [];
     const totalDebts = debts.reduce((sum, d) => sum + (parseFloat(d.remainingAmount) || 0), 0);
-    document.getElementById('dashTotalDebts').textContent = totalDebts.toFixed(2) + ' ج.م';
+    const dashDebtsEl = document.getElementById('dashTotalDebts');
+    if (dashDebtsEl) dashDebtsEl.textContent = totalDebts.toFixed(2) + ' ج.م';
 
     // عرض المنتجات المنخفضة
     const lowStockContainer = document.getElementById('lowStockProducts');

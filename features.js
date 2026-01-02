@@ -3,11 +3,18 @@
 // ============================================
 
 // Global data arrays for new features
-let expenses = [];
-let customers = [];
-let suppliers = [];
-let debts = [];
-let purchaseInvoices = [];
+window.expenses = [];
+window.customers = [];
+window.suppliers = [];
+window.debts = [];
+window.purchaseInvoices = [];
+
+// Aliases للوصول المحلي
+let expenses = window.expenses;
+let customers = window.customers;
+let suppliers = window.suppliers;
+let debts = window.debts;
+let purchaseInvoices = window.purchaseInvoices;
 
 // Chart instances
 let salesChartInstance = null;
@@ -262,12 +269,16 @@ async function addExpense(event) {
     };
 
     expenses.push(expense);
+    window.expenses = expenses;
     await saveExpensesToAPI();
     
     showAlert('success', '✅ تم إضافة المصروف بنجاح!');
     closeExpenseModal();
     displayExpenses();
     updateExpenseStats();
+    
+    // تحديث Dashboard
+    if (typeof updateDashboard === 'function') updateDashboard();
 }
 
 function displayExpenses() {
@@ -345,10 +356,14 @@ async function deleteExpense(id) {
     const confirmed = await customConfirm('هل تريد حذف هذا المصروف؟', 'حذف مصروف', 'warning');
     if (confirmed) {
         expenses = expenses.filter(e => e.id !== id);
+        window.expenses = expenses;
         await saveExpensesToAPI();
         showAlert('success', '✅ تم حذف المصروف بنجاح!');
         displayExpenses();
         updateExpenseStats();
+        
+        // تحديث Dashboard
+        if (typeof updateDashboard === 'function') updateDashboard();
     }
 }
 
@@ -385,12 +400,16 @@ async function addCustomer(event) {
     };
 
     customers.push(customer);
+    window.customers = customers;
     await saveCustomersToAPI();
     
     showAlert('success', '✅ تم إضافة العميل بنجاح!');
     closeCustomerModal();
     displayCustomers();
     updateCustomerStats();
+    
+    // تحديث Dashboard
+    if (typeof updateDashboard === 'function') updateDashboard();
 }
 
 function displayCustomers() {
@@ -451,10 +470,14 @@ async function deleteCustomer(id) {
     const confirmed = await customConfirm('هل تريد حذف هذا العميل؟', 'حذف عميل', 'warning');
     if (confirmed) {
         customers = customers.filter(c => c.id !== id);
+        window.customers = customers;
         await saveCustomersToAPI();
         showAlert('success', '✅ تم حذف العميل بنجاح!');
         displayCustomers();
         updateCustomerStats();
+        
+        // تحديث Dashboard
+        if (typeof updateDashboard === 'function') updateDashboard();
     }
 }
 
@@ -915,12 +938,15 @@ async function saveExpensesToAPI() {
 async function loadExpensesFromAPI() {
     try {
         if (typeof loadDataFromAPI === 'function') {
-            expenses = await loadDataFromAPI('expenses') || [];
+            window.expenses = await loadDataFromAPI('expenses') || [];
+            expenses = window.expenses;
         } else {
-            expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            window.expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            expenses = window.expenses;
         }
     } catch (error) {
         console.error('Error loading expenses:', error);
+        window.expenses = [];
         expenses = [];
     }
 }
@@ -936,11 +962,18 @@ async function saveCustomersToAPI() {
 async function loadCustomersFromAPI() {
     try {
         if (typeof loadDataFromAPI === 'function') {
-            customers = await loadDataFromAPI('customers') || [];
+            window.customers = await loadDataFromAPI('customers') || [];
+            customers = window.customers;
         } else {
-            customers = JSON.parse(localStorage.getItem('customers') || '[]');
+            window.customers = JSON.parse(localStorage.getItem('customers') || '[]');
+            customers = window.customers;
         }
     } catch (error) {
+        console.error('Error loading customers:', error);
+        window.customers = [];
+        customers = [];
+    }
+}
         console.error('Error loading customers:', error);
         customers = [];
     }
@@ -957,12 +990,15 @@ async function saveSuppliersToAPI() {
 async function loadSuppliersFromAPI() {
     try {
         if (typeof loadDataFromAPI === 'function') {
-            suppliers = await loadDataFromAPI('suppliers') || [];
+            window.suppliers = await loadDataFromAPI('suppliers') || [];
+            suppliers = window.suppliers;
         } else {
-            suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
+            window.suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
+            suppliers = window.suppliers;
         }
     } catch (error) {
         console.error('Error loading suppliers:', error);
+        window.suppliers = [];
         suppliers = [];
     }
 }
@@ -978,39 +1014,52 @@ async function savePurchaseInvoicesToAPI() {
 async function loadPurchaseInvoicesFromAPI() {
     try {
         if (typeof loadDataFromAPI === 'function') {
-            purchaseInvoices = await loadDataFromAPI('purchaseInvoices') || [];
+            window.purchaseInvoices = await loadDataFromAPI('purchaseInvoices') || [];
+            purchaseInvoices = window.purchaseInvoices;
         } else {
-            purchaseInvoices = JSON.parse(localStorage.getItem('purchaseInvoices') || '[]');
+            window.purchaseInvoices = JSON.parse(localStorage.getItem('purchaseInvoices') || '[]');
+            purchaseInvoices = window.purchaseInvoices;
         }
     } catch (error) {
         console.error('Error loading purchase invoices:', error);
+        window.purchaseInvoices = [];
         purchaseInvoices = [];
     }
 }
 
 // Initialize all features on app load
 async function initializeFeatures() {
-    await loadExpensesFromAPI();
-    await loadCustomersFromAPI();
-    await loadSuppliersFromAPI();
-    await loadPurchaseInvoicesFromAPI();
-    
-    // Update all displays
-    displayExpenses();
-    updateExpenseStats();
-    displayCustomers();
-    updateCustomerStats();
-    displaySuppliers();
-    updateSupplierStats();
-    displayPurchaseInvoices();
-    updatePurchaseStats();
-    updateDebtsDisplay();
-    updateAnalytics();
+    try {
+        await loadExpensesFromAPI();
+        expenses = window.expenses;
+        
+        await loadCustomersFromAPI();
+        customers = window.customers;
+        
+        await loadSuppliersFromAPI();
+        suppliers = window.suppliers;
+        
+        await loadPurchaseInvoicesFromAPI();
+        purchaseInvoices = window.purchaseInvoices;
+        
+        // Update all displays
+        if (typeof displayExpenses === 'function') displayExpenses();
+        if (typeof updateExpenseStats === 'function') updateExpenseStats();
+        if (typeof displayCustomers === 'function') displayCustomers();
+        if (typeof updateCustomerStats === 'function') updateCustomerStats();
+        if (typeof displaySuppliers === 'function') displaySuppliers();
+        if (typeof updateSupplierStats === 'function') updateSupplierStats();
+        if (typeof displayPurchaseInvoices === 'function') displayPurchaseInvoices();
+        if (typeof updatePurchaseStats === 'function') updatePurchaseStats();
+        if (typeof updateDebtsDisplay === 'function') updateDebtsDisplay();
+        if (typeof updateAnalytics === 'function') updateAnalytics();
+    } catch (error) {
+        console.error('خطأ في تحميل البيانات الإضافية:', error);
+    }
 }
 
-// Call initialization when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeFeatures);
-} else {
-    initializeFeatures();
-}
+// Make function globally accessible
+window.initializeFeatures = initializeFeatures;
+
+// لا نستدعي التهيئة هنا - سيتم استدعاؤها من app.js
+// هذا يضمن التحميل بالترتيب الصحيح
