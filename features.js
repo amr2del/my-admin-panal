@@ -16,6 +16,18 @@ let suppliers = window.suppliers;
 let debts = window.debts;
 let purchaseInvoices = window.purchaseInvoices;
 
+// دالة لتنسيق التاريخ بشكل قابل للقراءة
+function formatDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 // Chart instances
 let salesChartInstance = null;
 let categoryChartInstance = null;
@@ -270,7 +282,7 @@ async function addExpense(event) {
         description: document.getElementById('expenseDescription').value,
         amount: parseFloat(document.getElementById('expenseAmount').value),
         date: document.getElementById('expenseDate').value,
-        createdAt: new Date().toISOString()
+        createdAt: formatDateTime()
     };
 
     expenses.push(expense);
@@ -410,7 +422,7 @@ async function addCustomer(event) {
         type: document.getElementById('newCustomerType').value,
         totalPurchases: 0,
         debt: 0,
-        createdAt: new Date().toISOString()
+        createdAt: formatDateTime()
     };
 
     customers.push(customer);
@@ -542,7 +554,7 @@ async function addSupplier(event) {
         address: document.getElementById('supplierAddress').value || '',
         totalPurchases: 0,
         debt: 0,
-        createdAt: new Date().toISOString()
+        createdAt: formatDateTime()
     };
 
     suppliers.push(supplier);
@@ -810,7 +822,7 @@ async function addPurchaseInvoice(event) {
         items: items,
         total: parseFloat(document.getElementById('purchaseTotal').value),
         paymentStatus: document.getElementById('purchasePaymentStatus').value,
-        createdAt: new Date().toISOString()
+        createdAt: formatDateTime()
     };
     
     purchaseInvoices.push(invoice);
