@@ -1809,29 +1809,63 @@ function importData(event) {
 }
 
 async function clearAllData() {
-    if (!await customConfirm('سيتم حذف جميع المنتجات والمبيعات نهائياً! لا يمكن التراجع عن هذا الإجراء', 'تحذير خطير!', 'danger')) return;
+    if (!await customConfirm('سيتم حذف جميع البيانات نهائياً (المنتجات، المبيعات، العملاء، الموردين، المصروفات، فواتير الشراء)! لا يمكن التراجع عن هذا الإجراء', 'تحذير خطير!', 'danger')) return;
     if (!await customConfirm('تحذير أخير! هذا الإجراء لا يمكن التراجع عنه أبداً!', 'تأكيد نهائي', 'danger')) return;
     
-    // حذف جميع المنتجات
-    for (const product of products) {
-        await deleteProductFromAPI(product.id);
+    try {
+        showAlert('info', '⏳ جاري حذف جميع البيانات...');
+        
+        // حذف جميع المنتجات
+        for (const product of products) {
+            await deleteProductFromAPI(product.id);
+        }
+        
+        // حذف جميع المبيعات
+        for (const sale of sales) {
+            await deleteSaleFromAPI(sale.id);
+        }
+        
+        // مسح البيانات المحلية
+        products = [];
+        sales = [];
+        cart = [];
+        
+        // مسح البيانات الجديدة من features.js
+        if (typeof expenses !== 'undefined') expenses = [];
+        if (typeof customers !== 'undefined') customers = [];
+        if (typeof suppliers !== 'undefined') suppliers = [];
+        if (typeof purchaseInvoices !== 'undefined') purchaseInvoices = [];
+        
+        // حفظ البيانات الفارغة إلى API
+        if (typeof saveDataToAPI === 'function') {
+            await saveDataToAPI('expenses', []);
+            await saveDataToAPI('customers', []);
+            await saveDataToAPI('suppliers', []);
+            await saveDataToAPI('purchaseinvoices', []);
+        }
+        
+        // تحديث جميع العروض
+        displayProducts();
+        updateDashboard();
+        updateSettings();
+        displayCart();
+        
+        // تحديث عروض البيانات الجديدة
+        if (typeof displayExpenses === 'function') displayExpenses();
+        if (typeof updateExpenseStats === 'function') updateExpenseStats();
+        if (typeof displayCustomers === 'function') displayCustomers();
+        if (typeof updateCustomerStats === 'function') updateCustomerStats();
+        if (typeof displaySuppliers === 'function') displaySuppliers();
+        if (typeof updateSupplierStats === 'function') updateSupplierStats();
+        if (typeof displayPurchaseInvoices === 'function') displayPurchaseInvoices();
+        if (typeof updatePurchaseStats === 'function') updatePurchaseStats();
+        if (typeof updateAnalytics === 'function') updateAnalytics();
+        
+        showAlert('success', '✅ تم حذف جميع البيانات بنجاح');
+    } catch (error) {
+        console.error('خطأ في حذف البيانات:', error);
+        showAlert('error', '❌ حدث خطأ أثناء حذف البيانات');
     }
-    
-    // حذف جميع المبيعات
-    for (const sale of sales) {
-        await deleteSaleFromAPI(sale.id);
-    }
-    
-    products = [];
-    sales = [];
-    cart = [];
-    
-    displayProducts();
-    updateDashboard();
-    updateSettings();
-    displayCart();
-    
-    showAlert('success', 'تم حذف جميع البيانات');
 }
 
 // تصدير البيانات
