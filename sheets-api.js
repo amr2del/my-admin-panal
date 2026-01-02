@@ -5,15 +5,15 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJyGLadUTGTCya
 // دالة مساعدة للطلبات
 async function appsScriptRequest(action, data = {}) {
     try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: JSON.stringify({
-                action: action,
-                data: data
-            })
+        // استخدام GET بدل POST
+        const url = new URL(APPS_SCRIPT_URL);
+        url.searchParams.append('action', action);
+        if (Object.keys(data).length > 0) {
+            url.searchParams.append('data', JSON.stringify(data));
+        }
+        
+        const response = await fetch(url.toString(), {
+            method: 'GET'
         });
         
         const result = await response.json();

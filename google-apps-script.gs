@@ -107,8 +107,84 @@ function doOptions(e) {
     .setHeader('Access-Control-Max-Age', '86400');
 }
 
-// معالجة GET (للاختبار)
+// معالجة GET (للاختبار والطلبات)
 function doGet(e) {
+  // إذا في parameters، نفذ الطلب
+  if (e.parameter.action) {
+    try {
+      const action = e.parameter.action;
+      const data = e.parameter.data ? JSON.parse(e.parameter.data) : {};
+      
+      let response = {};
+      
+      switch(action) {
+        case 'getProducts':
+          response = getProducts();
+          break;
+        case 'addProduct':
+          response = addProduct(data);
+          break;
+        case 'updateProduct':
+          response = updateProduct(data.id, data.updates);
+          break;
+        case 'deleteProduct':
+          response = deleteProduct(data.id);
+          break;
+        case 'getSales':
+          response = getSales();
+          break;
+        case 'addSale':
+          response = addSale(data);
+          break;
+        case 'deleteSale':
+          response = deleteSale(data.id);
+          break;
+        case 'getSettings':
+          response = getSettings();
+          break;
+        case 'updateSettings':
+          response = updateSettings(data);
+          break;
+        case 'getExpenses':
+          response = getExpenses();
+          break;
+        case 'saveExpenses':
+          response = saveExpenses(data);
+          break;
+        case 'getCustomers':
+          response = getCustomers();
+          break;
+        case 'saveCustomers':
+          response = saveCustomers(data);
+          break;
+        case 'getSuppliers':
+          response = getSuppliers();
+          break;
+        case 'saveSuppliers':
+          response = saveSuppliers(data);
+          break;
+        case 'getPurchaseinvoices':
+          response = getPurchaseinvoices();
+          break;
+        case 'savePurchaseinvoices':
+          response = savePurchaseinvoices(data);
+          break;
+        default:
+          response = { success: false, message: 'إجراء غير معروف' };
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify(response))
+        .setMimeType(ContentService.MimeType.JSON);
+        
+    } catch (error) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        message: error.toString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  // إذا مفيش parameters، ارجع رسالة الاختبار
   return ContentService.createTextOutput('Google Apps Script is running!')
     .setMimeType(ContentService.MimeType.TEXT);
 }
