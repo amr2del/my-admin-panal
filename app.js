@@ -151,9 +151,15 @@ async function showTab(tabName) {
 
     // عرض التبويب المطلوب
     document.getElementById(tabName).classList.add('active');
-    if (event && event.target) {
-        event.target.closest('.nav-link').classList.add('active');
-    }
+    
+    // تحديث القائمة الجانبية لإظهار القسم النشط
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        const linkOnClick = link.getAttribute('onclick');
+        if (linkOnClick && linkOnClick.includes(`'${tabName}'`)) {
+            link.classList.add('active');
+        }
+    });
     
     // Close sidebar on mobile after selecting a tab
     if (window.innerWidth <= 768) {
