@@ -374,11 +374,11 @@ async function addCustomer(event) {
     
     const customer = {
         id: Date.now(),
-        name: document.getElementById('customerName').value,
-        phone: document.getElementById('customerPhone').value,
-        email: document.getElementById('customerEmail').value || '',
-        address: document.getElementById('customerAddress').value || '',
-        type: document.getElementById('customerType').value,
+        name: document.getElementById('newCustomerName').value,
+        phone: document.getElementById('newCustomerPhone').value,
+        email: document.getElementById('newCustomerEmail').value || '',
+        address: document.getElementById('newCustomerAddress').value || '',
+        type: document.getElementById('newCustomerType').value,
         totalPurchases: 0,
         debt: 0,
         createdAt: new Date().toISOString()
