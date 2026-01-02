@@ -883,6 +883,7 @@ input:focus, select:focus, textarea:focus {
     color: white;
 }
 
+.stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .stat-icon.purple { background: linear-gradient(135deg, #667eea, #764ba2); }
 .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); }
 .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
