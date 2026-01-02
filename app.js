@@ -178,6 +178,34 @@ async function showTab(tabName) {
         updateReports();
     } else if (tabName === 'settings') {
         updateSettings();
+    } else if (tabName === 'analytics') {
+        if (typeof updateAnalytics === 'function') {
+            updateAnalytics();
+        }
+    } else if (tabName === 'expenses') {
+        if (typeof displayExpenses === 'function') {
+            displayExpenses();
+            updateExpenseStats();
+        }
+    } else if (tabName === 'customers') {
+        if (typeof displayCustomers === 'function') {
+            displayCustomers();
+            updateCustomerStats();
+        }
+    } else if (tabName === 'suppliers') {
+        if (typeof displaySuppliers === 'function') {
+            displaySuppliers();
+            updateSupplierStats();
+        }
+    } else if (tabName === 'debts') {
+        if (typeof updateDebtsDisplay === 'function') {
+            updateDebtsDisplay();
+        }
+    } else if (tabName === 'purchases') {
+        if (typeof displayPurchaseInvoices === 'function') {
+            displayPurchaseInvoices();
+            updatePurchaseStats();
+        }
     }
 }
 
@@ -424,7 +452,39 @@ function updateDashboard() {
     // مبيعات اليوم
     const today = new Date().toDateString();
     const todaySales = sales.filter(s => new Date(s.date).toDateString() === today);
-    document.getElementById('todaySales').textContent = todaySales.reduce((sum, s) => sum + s.total, 0).toFixed(2) + ' ج.م';
+    const todaySalesTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
+    document.getElementById('todaySales').textContent = todaySalesTotal.toFixed(2) + ' ج.م';
+
+    // حساب العملاء (من features.js)
+    const customers = window.customersData || [];
+    const totalCustomers = customers.length;
+    document.getElementById('dashTotalCustomers').textContent = totalCustomers;
+
+    // حساب المصروفات اليوم
+    const expenses = window.expensesData || [];
+    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === today);
+    const todayExpensesTotal = todayExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    document.getElementById('dashExpensesToday').textContent = todayExpensesTotal.toFixed(2) + ' ج.م';
+
+    // حساب صافي الربح (مبيعات اليوم - مصروفات اليوم)
+    const netProfit = todaySalesTotal - todayExpensesTotal;
+    const netProfitElement = document.getElementById('dashNetProfit');
+    netProfitElement.textContent = netProfit.toFixed(2) + ' ج.م';
+    
+    // تغيير لون البطاقة حسب الربح
+    const profitCard = netProfitElement.closest('.stat-card');
+    if (netProfit < 0) {
+        profitCard.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    } else if (netProfit === 0) {
+        profitCard.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+    } else {
+        profitCard.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    }
+
+    // حساب الديون
+    const debts = window.debtsData || [];
+    const totalDebts = debts.reduce((sum, d) => sum + (parseFloat(d.remainingAmount) || 0), 0);
+    document.getElementById('dashTotalDebts').textContent = totalDebts.toFixed(2) + ' ج.م';
 
     // عرض المنتجات المنخفضة
     const lowStockContainer = document.getElementById('lowStockProducts');
@@ -463,9 +523,77 @@ function updateDashboard() {
             </div>
         `).join('');
     }
+
+    // عرض آخر المبيعات
+    displayRecentSalesInDashboard();
     
     // تحديث عداد التنبيهات
     document.getElementById('notificationCount').textContent = lowStock.length;
+}
+
+// عرض آخر المبيعات في لوحة التحكم
+function displayRecentSalesInDashboard() {
+    const recentSalesContainer = document.getElementById('recentSales');
+    if (!recentSalesContainer) return;
+
+    console.log('عدد المبيعات الكلي:', sales.length);
+    console.log('بيانات المبيعات:', sales);
+
+    // آخر 5 مبيعات (نفس كود التقارير)
+    const recentSales = sales.slice().reverse().slice(0, 5);
+
+    console.log('آخر 5 مبيعات:', recentSales);
+
+    if (recentSales.length === 0) {
+        recentSalesContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3>لا توجد مبيعات بعد</h3>
+                <p style="color: #64748b;">ستظهر هنا آخر 5 مبيعات تمت</p>
+            </div>
+        `;
+        return;
+    }
+
+    recentSalesContainer.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--light); border-bottom: 2px solid var(--primary);">
+                    <th style="padding: 12px; text-align: right;">رقم الفاتورة</th>
+                    <th style="padding: 12px; text-align: right;">التاريخ</th>
+                    <th style="padding: 12px; text-align: right;">العميل</th>
+                    <th style="padding: 12px; text-align: right;">الأصناف</th>
+                    <th style="padding: 12px; text-align: right;">المبلغ</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${recentSales.map(sale => `
+                    <tr style="border-bottom: 1px solid var(--light); transition: background-color 0.2s;">
+                        <td style="padding: 12px; font-weight: 600; color: var(--primary);">#${sale.id}</td>
+                        <td style="padding: 12px; font-size: 13px; color: #64748b;">${new Date(sale.date).toLocaleDateString('ar-EG')}</td>
+                        <td style="padding: 12px;">${sale.customer || 'عميل نقدي'}</td>
+                        <td style="padding: 12px;">${sale.items.length} منتج</td>
+                        <td style="padding: 12px; font-weight: 700; color: var(--success); font-size: 16px;">${sale.total.toFixed(2)} ج.م</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// حساب الوقت المنقضي
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'الآن';
+    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+    if (diffDays < 7) return `منذ ${diffDays} يوم`;
+    return date.toLocaleDateString('ar-EG');
 }
 
 // عرض رسالة تنبيه
@@ -826,6 +954,9 @@ async function completeSale() {
         
         sales.push(result.sale);
         
+        // تحديث لوحة التحكم
+        updateDashboard();
+        
         // إعادة تعيين النموذج
         cart = [];
         displayCart();
@@ -859,73 +990,428 @@ async function printInvoice(sale) {
         <html dir="rtl">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>فاتورة رقم ${sale.id}</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
             <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Cairo', Arial, sans-serif; padding: 20px; }
-                .invoice { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 20px; }
-                .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-                .header h1 { font-size: 24px; margin-bottom: 5px; }
-                .info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #000; padding: 10px; text-align: right; }
-                th { background: #f0f0f0; font-weight: bold; }
-                .total { text-align: left; font-size: 18px; font-weight: bold; margin-top: 20px; }
-                .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 2px solid #000; }
-                @media print { body { padding: 0; } }
+                * { 
+                    margin: 0; 
+                    padding: 0; 
+                    box-sizing: border-box; 
+                }
+                
+                body { 
+                    font-family: 'Cairo', Arial, sans-serif; 
+                    padding: 30px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                }
+                
+                .invoice { 
+                    max-width: 850px; 
+                    margin: 0 auto; 
+                    background: white;
+                    border-radius: 15px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    overflow: hidden;
+                }
+                
+                .header { 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    text-align: center; 
+                    padding: 30px 25px;
+                    position: relative;
+                }
+                
+                .header::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="rgba(255,255,255,0.05)"/></svg>');
+                    opacity: 0.3;
+                }
+                
+                .header-content {
+                    position: relative;
+                    z-index: 1;
+                }
+                
+                .logo-icon {
+                    font-size: 48px;
+                    margin-bottom: 15px;
+                    display: inline-block;
+                    animation: pulse 2s infinite;
+                }
+                
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                
+                .header h1 { 
+                    font-size: 32px;
+                    font-weight: 900;
+                    margin-bottom: 10px;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+                }
+                
+                .header p {
+                    font-size: 15px;
+                    opacity: 0.95;
+                    margin: 5px 0;
+                }
+                
+                .invoice-body {
+                    padding: 30px 35px;
+                }
+                
+                .invoice-header-info {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 30px;
+                    padding-bottom: 25px;
+                    border-bottom: 3px solid #f0f0f0;
+                }
+                
+                .info-section {
+                    flex: 1;
+                }
+                
+                .info-section h3 {
+                    color: #667eea;
+                    font-size: 16px;
+                    margin-bottom: 12px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .info-item {
+                    display: flex;
+                    margin: 8px 0;
+                    font-size: 14px;
+                }
+                
+                .info-item strong {
+                    color: #555;
+                    min-width: 80px;
+                    font-weight: 600;
+                }
+                
+                .info-item span {
+                    color: #333;
+                }
+                
+                .invoice-number {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 8px 20px;
+                    border-radius: 25px;
+                    font-size: 18px;
+                    font-weight: 700;
+                    display: inline-block;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                }
+                
+                .items-section {
+                    margin: 25px 0;
+                }
+                
+                .section-title {
+                    color: #333;
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-bottom: 15px;
+                    padding-right: 15px;
+                    border-right: 4px solid #667eea;
+                }
+                
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse;
+                    margin: 15px 0;
+                    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+                    border-radius: 10px;
+                    overflow: hidden;
+                }
+                
+                thead {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                }
+                
+                th { 
+                    color: white;
+                    padding: 15px 12px;
+                    text-align: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                
+                td { 
+                    padding: 15px 12px;
+                    text-align: center;
+                    border-bottom: 1px solid #f0f0f0;
+                    font-size: 14px;
+                }
+                
+                tbody tr {
+                    transition: background 0.2s;
+                }
+                
+                tbody tr:hover {
+                    background: #f8f9ff;
+                }
+                
+                tbody tr:last-child td {
+                    border-bottom: none;
+                }
+                
+                .item-number {
+                    background: #667eea;
+                    color: white;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 12px;
+                }
+                
+                .item-name {
+                    font-weight: 600;
+                    color: #333;
+                }
+                
+                .summary {
+                    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+                    padding: 25px;
+                    border-radius: 12px;
+                    margin: 25px 0;
+                    border: 2px solid #e8eaff;
+                }
+                
+                .summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 12px 0;
+                    font-size: 15px;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+                
+                .summary-row:last-child {
+                    border-bottom: none;
+                }
+                
+                .summary-row.subtotal {
+                    color: #555;
+                }
+                
+                .summary-row.discount {
+                    color: #f59e0b;
+                    font-weight: 600;
+                }
+                
+                .summary-row.discount .value {
+                    color: #dc2626;
+                }
+                
+                .summary-row.total {
+                    font-size: 22px;
+                    font-weight: 900;
+                    color: #16a34a;
+                    padding: 15px 0;
+                    margin-top: 10px;
+                    border-top: 3px solid #667eea;
+                }
+                
+                .summary-row .label {
+                    font-weight: 600;
+                }
+                
+                .summary-row .value {
+                    font-weight: 700;
+                }
+                
+                .payment-method {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: white;
+                    padding: 10px 20px;
+                    border-radius: 25px;
+                    color: #667eea;
+                    font-weight: 600;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    margin-top: 10px;
+                }
+                
+                .footer { 
+                    text-align: center; 
+                    padding: 25px;
+                    background: #f8f9ff;
+                    border-top: 3px solid #e8eaff;
+                }
+                
+                .footer-message {
+                    font-size: 18px;
+                    color: #667eea;
+                    font-weight: 700;
+                    margin-bottom: 10px;
+                }
+                
+                .footer-note {
+                    font-size: 14px;
+                    color: #666;
+                    margin: 5px 0;
+                }
+                
+                .divider {
+                    height: 3px;
+                    background: linear-gradient(90deg, transparent, #667eea, transparent);
+                    margin: 20px 0;
+                }
+                
+                @media print { 
+                    body { 
+                        padding: 0;
+                        background: white;
+                    }
+                    
+                    .invoice {
+                        box-shadow: none;
+                        border-radius: 0;
+                    }
+                    
+                    tbody tr:hover {
+                        background: transparent;
+                    }
+                    
+                    @page {
+                        margin: 15mm;
+                    }
+                }
             </style>
         </head>
         <body>
             <div class="invoice">
                 <div class="header">
-                    <h1>${shopName}</h1>
-                    <p>${shopAddress}</p>
-                    <p>هاتف: ${shopPhone}</p>
-                </div>
-                <div class="info">
-                    <div>
-                        <p><strong>فاتورة رقم:</strong> ${sale.id}</p>
-                        <p><strong>التاريخ:</strong> ${new Date(sale.date).toLocaleString('ar-EG')}</p>
-                    </div>
-                    <div>
-                        <p><strong>العميل:</strong> ${sale.customer}</p>
-                        <p><strong>الهاتف:</strong> ${sale.phone || '-'}</p>
+                    <div class="header-content">
+                        <div class="logo-icon">🏍️</div>
+                        <h1>${shopName}</h1>
+                        <p><i class="fas fa-map-marker-alt"></i> ${shopAddress}</p>
+                        <p><i class="fas fa-phone"></i> ${shopPhone}</p>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>المنتج</th>
-                            <th>السعر</th>
-                            <th>الكمية</th>
-                            <th>الإجمالي</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sale.items.map(item => `
-                            <tr>
-                                <td>${item.name}</td>
-                                <td>${item.price.toFixed(2)} ج.م</td>
-                                <td>${item.quantity}</td>
-                                <td>${(item.price * item.quantity).toFixed(2)} ج.م</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <div class="total">
-                    <p>المجموع الفرعي: ${sale.subtotal.toFixed(2)} ج.م</p>
-                    <p>الخصم: ${sale.discount.toFixed(2)} ج.م</p>
-                    <p style="font-size: 22px; color: #16a34a;">الإجمالي: ${sale.total.toFixed(2)} ج.م</p>
-                    <p>طريقة الدفع: ${sale.paymentMethod === 'cash' ? 'نقدي' : sale.paymentMethod === 'card' ? 'بطاقة' : 'تقسيط'}</p>
+                
+                <div class="invoice-body">
+                    <div class="invoice-header-info">
+                        <div class="info-section">
+                            <h3><i class="fas fa-file-invoice"></i> معلومات الفاتورة</h3>
+                            <div class="info-item">
+                                <strong>رقم الفاتورة:</strong>
+                                <span class="invoice-number">#${sale.id}</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>التاريخ:</strong>
+                                <span>${new Date(sale.date).toLocaleDateString('ar-EG', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3><i class="fas fa-user"></i> معلومات العميل</h3>
+                            <div class="info-item">
+                                <strong>الاسم:</strong>
+                                <span>${sale.customer}</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>الهاتف:</strong>
+                                <span>${sale.phone || 'غير محدد'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="items-section">
+                        <h2 class="section-title">الأصناف المباعة</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 40%;">اسم المنتج</th>
+                                    <th>سعر الوحدة</th>
+                                    <th>الكمية</th>
+                                    <th>الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sale.items.map((item, index) => `
+                                    <tr>
+                                        <td><span class="item-number">${index + 1}</span></td>
+                                        <td style="text-align: right;"><span class="item-name">${item.name}</span></td>
+                                        <td>${item.price.toFixed(2)} ج.م</td>
+                                        <td><strong>${item.quantity}</strong></td>
+                                        <td><strong>${(item.price * item.quantity).toFixed(2)} ج.م</strong></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="summary">
+                        <div class="summary-row subtotal">
+                            <span class="label">المجموع الفرعي:</span>
+                            <span class="value">${sale.subtotal.toFixed(2)} ج.م</span>
+                        </div>
+                        ${sale.discount > 0 ? `
+                        <div class="summary-row discount">
+                            <span class="label"><i class="fas fa-tag"></i> الخصم:</span>
+                            <span class="value">- ${sale.discount.toFixed(2)} ج.م</span>
+                        </div>
+                        ` : ''}
+                        <div class="summary-row total">
+                            <span class="label"><i class="fas fa-receipt"></i> الإجمالي النهائي:</span>
+                            <span class="value">${sale.total.toFixed(2)} ج.م</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="payment-method">
+                                <i class="fas fa-${sale.paymentMethod === 'cash' ? 'money-bill-wave' : sale.paymentMethod === 'card' ? 'credit-card' : 'calendar-alt'}"></i>
+                                <span>طريقة الدفع: ${sale.paymentMethod === 'cash' ? 'نقدي' : sale.paymentMethod === 'card' ? 'بطاقة' : 'تقسيط'}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                
                 <div class="footer">
-                    <p>شكراً لتعاملكم معنا</p>
-                    <p>نتمنى لكم تجربة ممتعة</p>
+                    <p class="footer-message">✨ شكراً لتعاملكم معنا ✨</p>
+                    <p class="footer-note">نتمنى لكم تجربة ممتعة وخدمة مميزة</p>
+                    <p class="footer-note" style="margin-top: 15px; font-size: 12px; color: #999;">
+                        <i class="fas fa-print"></i> تمت الطباعة بواسطة نظام إدارة قطع الغيار
+                    </p>
                 </div>
             </div>
             <script>
                 window.onload = function() {
-                    window.print();
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
                 }
             </script>
         </body>

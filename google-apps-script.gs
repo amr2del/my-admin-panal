@@ -50,6 +50,32 @@ function doPost(e) {
       case 'updateSettings':
         response = updateSettings(data);
         break;
+      case 'getExpenses':
+        response = getExpenses();
+        break;
+      case 'saveExpenses':
+        response = saveExpenses(data);
+        break;
+      case 'getCustomers':
+        response = getCustomers();
+        break;
+      case 'saveCustomers':
+        response = saveCustomers(data);
+        break;
+      case 'getSuppliers':
+        response = getSuppliers();
+        break;
+      case 'saveSuppliers':
+        response = saveSuppliers(data);
+        break;
+      case 'getPurchaseinvoices':
+        response = getPurchaseinvoices();
+        break;
+      case 'savePurchaseinvoices':
+        response = savePurchaseinvoices(data);
+        break;
+        response = updateSettings(data);
+        break;
       default:
         response = { success: false, message: 'إجراء غير معروف' };
     }
@@ -315,4 +341,257 @@ function updateSettings(newSettings) {
   }
   
   return { success: true, settings: newSettings, message: 'تم تحديث الإعدادات بنجاح' };
+}
+
+// ============ المصروفات ============
+
+function getExpenses() {
+  const sheet = getSheet('Expenses');
+  if (!sheet) {
+    // إنشاء Sheet جديد إذا لم يكن موجوداً
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Expenses');
+    newSheet.appendRow(['ID', 'Type', 'Description', 'Amount', 'Date', 'CreatedAt']);
+    return { success: true, expenses: [] };
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const expenses = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    expenses.push({
+      id: row[0],
+      type: row[1],
+      description: row[2],
+      amount: row[3],
+      date: row[4],
+      createdAt: row[5]
+    });
+  }
+  
+  return { success: true, expenses: expenses };
+}
+
+function saveExpenses(expensesData) {
+  const sheet = getSheet('Expenses');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Expenses');
+    newSheet.appendRow(['ID', 'Type', 'Description', 'Amount', 'Date', 'CreatedAt']);
+  }
+  
+  const finalSheet = getSheet('Expenses');
+  const lastRow = finalSheet.getLastRow();
+  if (lastRow > 1) {
+    finalSheet.deleteRows(2, lastRow - 1);
+  }
+  
+  const rows = expensesData.map(exp => [
+    exp.id,
+    exp.type,
+    exp.description,
+    exp.amount,
+    exp.date,
+    exp.createdAt
+  ]);
+  
+  if (rows.length > 0) {
+    finalSheet.getRange(2, 1, rows.length, 6).setValues(rows);
+  }
+  
+  return { success: true, message: 'تم حفظ المصروفات بنجاح' };
+}
+
+// ============ العملاء ============
+
+function getCustomers() {
+  const sheet = getSheet('Customers');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Customers');
+    newSheet.appendRow(['ID', 'Name', 'Phone', 'Email', 'Address', 'Type', 'TotalPurchases', 'Debt', 'CreatedAt']);
+    return { success: true, customers: [] };
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const customers = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    customers.push({
+      id: row[0],
+      name: row[1],
+      phone: row[2],
+      email: row[3],
+      address: row[4],
+      type: row[5],
+      totalPurchases: row[6],
+      debt: row[7],
+      createdAt: row[8]
+    });
+  }
+  
+  return { success: true, customers: customers };
+}
+
+function saveCustomers(customersData) {
+  const sheet = getSheet('Customers');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Customers');
+    newSheet.appendRow(['ID', 'Name', 'Phone', 'Email', 'Address', 'Type', 'TotalPurchases', 'Debt', 'CreatedAt']);
+  }
+  
+  const finalSheet = getSheet('Customers');
+  const lastRow = finalSheet.getLastRow();
+  if (lastRow > 1) {
+    finalSheet.deleteRows(2, lastRow - 1);
+  }
+  
+  const rows = customersData.map(c => [
+    c.id,
+    c.name,
+    c.phone,
+    c.email,
+    c.address,
+    c.type,
+    c.totalPurchases,
+    c.debt,
+    c.createdAt
+  ]);
+  
+  if (rows.length > 0) {
+    finalSheet.getRange(2, 1, rows.length, 9).setValues(rows);
+  }
+  
+  return { success: true, message: 'تم حفظ العملاء بنجاح' };
+}
+
+// ============ الموردين ============
+
+function getSuppliers() {
+  const sheet = getSheet('Suppliers');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Suppliers');
+    newSheet.appendRow(['ID', 'Name', 'Phone', 'Email', 'Category', 'Address', 'TotalPurchases', 'Debt', 'CreatedAt']);
+    return { success: true, suppliers: [] };
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const suppliers = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    suppliers.push({
+      id: row[0],
+      name: row[1],
+      phone: row[2],
+      email: row[3],
+      category: row[4],
+      address: row[5],
+      totalPurchases: row[6],
+      debt: row[7],
+      createdAt: row[8]
+    });
+  }
+  
+  return { success: true, suppliers: suppliers };
+}
+
+function saveSuppliers(suppliersData) {
+  const sheet = getSheet('Suppliers');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('Suppliers');
+    newSheet.appendRow(['ID', 'Name', 'Phone', 'Email', 'Category', 'Address', 'TotalPurchases', 'Debt', 'CreatedAt']);
+  }
+  
+  const finalSheet = getSheet('Suppliers');
+  const lastRow = finalSheet.getLastRow();
+  if (lastRow > 1) {
+    finalSheet.deleteRows(2, lastRow - 1);
+  }
+  
+  const rows = suppliersData.map(s => [
+    s.id,
+    s.name,
+    s.phone,
+    s.email,
+    s.category,
+    s.address,
+    s.totalPurchases,
+    s.debt,
+    s.createdAt
+  ]);
+  
+  if (rows.length > 0) {
+    finalSheet.getRange(2, 1, rows.length, 9).setValues(rows);
+  }
+  
+  return { success: true, message: 'تم حفظ الموردين بنجاح' };
+}
+
+// ============ فواتير الشراء ============
+
+function getPurchaseinvoices() {
+  const sheet = getSheet('PurchaseInvoices');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('PurchaseInvoices');
+    newSheet.appendRow(['ID', 'SupplierID', 'Date', 'InvoiceNumber', 'Items', 'Total', 'PaymentStatus', 'CreatedAt']);
+    return { success: true, purchaseinvoices: [] };
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const invoices = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    invoices.push({
+      id: row[0],
+      supplierId: row[1],
+      date: row[2],
+      invoiceNumber: row[3],
+      items: JSON.parse(row[4] || '[]'),
+      total: row[5],
+      paymentStatus: row[6],
+      createdAt: row[7]
+    });
+  }
+  
+  return { success: true, purchaseinvoices: invoices };
+}
+
+function savePurchaseinvoices(invoicesData) {
+  const sheet = getSheet('PurchaseInvoices');
+  if (!sheet) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const newSheet = ss.insertSheet('PurchaseInvoices');
+    newSheet.appendRow(['ID', 'SupplierID', 'Date', 'InvoiceNumber', 'Items', 'Total', 'PaymentStatus', 'CreatedAt']);
+  }
+  
+  const finalSheet = getSheet('PurchaseInvoices');
+  const lastRow = finalSheet.getLastRow();
+  if (lastRow > 1) {
+    finalSheet.deleteRows(2, lastRow - 1);
+  }
+  
+  const rows = invoicesData.map(inv => [
+    inv.id,
+    inv.supplierId,
+    inv.date,
+    inv.invoiceNumber,
+    JSON.stringify(inv.items),
+    inv.total,
+    inv.paymentStatus,
+    inv.createdAt
+  ]);
+  
+  if (rows.length > 0) {
+    finalSheet.getRange(2, 1, rows.length, 8).setValues(rows);
+  }
+  
+  return { success: true, message: 'تم حفظ فواتير الشراء بنجاح' };
 }

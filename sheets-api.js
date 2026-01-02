@@ -1,6 +1,6 @@
 // ============ Google Apps Script API ============
 // رابط Web App من Google Apps Script
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJz1KunrpFnEy1KkQP1fWw4VnNfDvs9DNd7Hqm7cA2n8qlsfvMqegbpnSbysUb14jpWg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdeEmH2a6kIumBRKIoVRYvZrjqSFuUA6u6XEZYjOLwaPyRs8rkwwYFmUiGpH4IJb6Z3A/exec';
 
 // دالة مساعدة للطلبات
 async function appsScriptRequest(action, data = {}) {
@@ -88,4 +88,23 @@ async function loadSettingsFromAPI() {
 async function saveSettingsToAPI(settings) {
     const result = await appsScriptRequest('updateSettings', settings);
     return result;
+}
+
+// ============ المصروفات API ============
+
+async function loadDataFromAPI(dataType) {
+    const result = await appsScriptRequest(`get${capitalizeFirstLetter(dataType)}`);
+    if (result.success) {
+        return result[dataType] || [];
+    }
+    return [];
+}
+
+async function saveDataToAPI(dataType, data) {
+    const result = await appsScriptRequest(`save${capitalizeFirstLetter(dataType)}`, data);
+    return result;
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }

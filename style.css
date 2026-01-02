@@ -1038,12 +1038,12 @@ input:focus, select:focus, textarea:focus {
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
     animation: fadeIn 0.3s;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal.active {
     display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .modal-content {
@@ -2135,4 +2135,66 @@ input:focus, select:focus, textarea:focus {
     .capital-detail-label {
         font-size: 13px;
     }
+}
+
+/* ============================================ */
+/* Chart.js Canvas Fix - Prevent stretching */
+/* ============================================ */
+canvas {
+    max-width: 100% !important;
+}
+
+.content-card canvas {
+    display: block;
+}
+
+/* ============================================ */
+/* Quick Action Buttons Styling */
+/* ============================================ */
+.quick-action-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    filter: brightness(1.1);
+}
+
+.quick-action-btn:active {
+    transform: translateY(-2px);
+}
+
+/* Sale Item Styling */
+.sale-item {
+    transition: background-color 0.2s;
+}
+
+.sale-item:hover {
+    background-color: #f8fafc;
+}
+
+.sale-item:last-child {
+    border-bottom: none !important;
+}
+
+/* Recent Sales Table in Dashboard */
+#recentSales table tbody tr:hover {
+    background-color: #f8fafc;
+    cursor: pointer;
+}
+
+#recentSales table tbody tr {
+    transition: background-color 0.2s;
+}
+
+/* Stat Card Click Effect */
+.stat-card[onclick] {
+    transition: all 0.3s ease;
+}
+
+.stat-card[onclick]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
