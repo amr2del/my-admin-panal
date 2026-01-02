@@ -67,11 +67,11 @@ async function initializeApp() {
     // تحميل بيانات features إذا كانت الدالة موجودة
     try {
         if (typeof initializeFeatures === 'function') {
-            showLoading('جاري تحميل البيانات الإضافية...');
+            showLoading('جاري تحميل البيانات ...');
             await initializeFeatures();
         }
     } catch (error) {
-        console.error('خطأ في تحميل البيانات الإضافية:', error);
+        console.error('خطأ في تحميل البيانات :', error);
         // استمر في التحميل حتى لو في خطأ
     }
     updateLoadingProgress(80);

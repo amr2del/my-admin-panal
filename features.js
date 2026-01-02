@@ -974,10 +974,6 @@ async function loadCustomersFromAPI() {
         customers = [];
     }
 }
-        console.error('Error loading customers:', error);
-        customers = [];
-    }
-}
 
 async function saveSuppliersToAPI() {
     if (typeof saveDataToAPI === 'function') {
@@ -1054,7 +1050,7 @@ async function initializeFeatures() {
         if (typeof updateDebtsDisplay === 'function') updateDebtsDisplay();
         if (typeof updateAnalytics === 'function') updateAnalytics();
     } catch (error) {
-        console.error('خطأ في تحميل البيانات الإضافية:', error);
+        console.error('خطأ في تحميل البيانات :', error);
     }
 }
 
