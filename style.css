@@ -195,22 +195,6 @@ body.sidebar-open {
     color: white;
 }
 
-.cashier-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    border-radius: 12px;
-    color: white;
-    font-weight: 600;
-    font-size: 16px;
-}
-
-.cashier-label i {
-    font-size: 20px;
-}
-
 .capital-display {
     display: flex;
     align-items: center;
@@ -1857,15 +1841,6 @@ input:focus, select:focus, textarea:focus {
         gap: 8px;
     }
     
-    .cashier-label {
-        padding: 8px 12px;
-        font-size: 13px;
-    }
-    
-    .cashier-label i {
-        font-size: 16px;
-    }
-    
     .capital-display {
         padding: 6px 10px;
     }
@@ -2056,14 +2031,6 @@ input:focus, select:focus, textarea:focus {
     
     .product-card {
         padding: 12px;
-    }
-    
-    .cashier-label span {
-        display: none;
-    }
-    
-    .cashier-label {
-        padding: 7px 10px;
     }
     
     .capital-info {

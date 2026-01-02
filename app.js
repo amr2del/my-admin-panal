@@ -2216,20 +2216,38 @@ function checkLowStockAlert() {
 
 // تشغيل صوت التنبيه
 function playAlertSound() {
-    // إنشاء صوت تنبيه بسيط باستخدام Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    try {
+        // إنشاء صوت تنبيه بسيط باستخدام Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Resume audio context إذا كان suspended (بسبب autoplay policy)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+        console.log('تعذر تشغيل الصوت:', error);
+        // استخدام صوت بديل (beep) باستخدام HTML5 Audio
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuFzvLZiTYIGGe88OScTgwOUKnl8bFfGwU7ktjzzHkqBSd+Hv/7TwMaC1Ck5vGxXxsEOZLX88x5KgUofx//+08DGgtQpOXxr18aBDqS1/PMeSoFKH8f//tPAxkLUKTl8a9fGgQ6ktfzzHkqBSh/H//7TwMZC1Ck5fGvXxoEOpLX88x5KgUofx//+08DGQtQpOXxr18aBDqS1/PMeSoFKH8f//tPAxkLUKTl8a9fGgQ6ktfzzHkqBSh/H//7TwMZC1Ck5fGvXxoEOpLX88x5KgUofx//+08DGQtQpOXxr18aBDqS1/PMeSoFKH8f//tPAxkLUKTl8a9fGgQ6ktfzzHkqBSh/H//7TwMZC1Ck5fGvXxoEOpLX88x5KgUofx//+08DGQtQpOXxr18aBDqS1/PMeSoFKH8f//tPAxkLUKTl8a9fGgQ6ktfzzHkqBSh/H//7TwMZC1Ck5fGvXxoEOpLX88x5KgUofx//+08DGQs=');
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log('تعذر تشغيل الصوت البديل:', e));
+        } catch (e) {
+            console.log('تعذر تشغيل الصوت البديل:', e);
+        }
+    }
 }
