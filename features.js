@@ -1056,16 +1056,15 @@ async function loadPurchaseInvoicesFromAPI() {
 // Initialize all features on app load
 async function initializeFeatures() {
     try {
-        await loadExpensesFromAPI();
+        // ⚡ تحميل سريع من LocalStorage أولاً
+        window.expenses = getExpensesLocally();
+        window.customers = getFromLocalStorage('spareparts_customers') || [];
+        window.suppliers = getFromLocalStorage('spareparts_suppliers') || [];
+        window.purchaseInvoices = getFromLocalStorage('spareparts_purchase_invoices') || [];
+        
         expenses = window.expenses;
-        
-        await loadCustomersFromAPI();
         customers = window.customers;
-        
-        await loadSuppliersFromAPI();
         suppliers = window.suppliers;
-        
-        await loadPurchaseInvoicesFromAPI();
         purchaseInvoices = window.purchaseInvoices;
         
         // Update all displays
@@ -1080,7 +1079,7 @@ async function initializeFeatures() {
         if (typeof updateDebtsDisplay === 'function') updateDebtsDisplay();
         if (typeof updateAnalytics === 'function') updateAnalytics();
     } catch (error) {
-        console.error('خطأ في تحميل البيانات :', error);
+        console.error('خطأ في تحميل البيانات:', error);
     }
 }
 

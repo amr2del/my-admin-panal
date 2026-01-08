@@ -73,24 +73,20 @@ async function initializeApp() {
     
     updateLoadingProgress(30);
     
-    // تحميل البيانات من API
-    showLoading('جاري تحميل المنتجات...');
-    await loadProductsFromAPI();
+    // ⚡ تحميل سريع من LocalStorage (فوري بدون انتظار)
+    showLoading('جاري تحميل البيانات...');
+    await quickLoadData();
     updateLoadingProgress(60);
-    
-    showLoading('جاري تحميل المبيعات...');
-    await loadSalesFromAPI();
     updateLoadingProgress(60);
     
     // تحميل بيانات features إذا كانت الدالة موجودة
     try {
         if (typeof initializeFeatures === 'function') {
-            showLoading('جاري تحميل البيانات ...');
+            showLoading('جاري تحميل البيانات...');
             await initializeFeatures();
         }
     } catch (error) {
-        console.error('خطأ في تحميل البيانات :', error);
-        // استمر في التحميل حتى لو في خطأ
+        console.error('خطأ في تحميل البيانات:', error);
     }
     updateLoadingProgress(80);
     
@@ -117,6 +113,19 @@ async function initializeApp() {
     
     updateLoadingProgress(100);
     hideLoading();
+    
+    // 🌐 مزامنة مع السحابة في الخلفية (بدون انتظار)
+    if (navigator.onLine) {
+        syncWithCloud().then(() => {
+            console.log('✅ تمت المزامنة مع السحابة');
+            // تحديث الواجهة بعد المزامنة
+            updateDashboard();
+            displayProducts();
+            displayPOSProducts();
+        }).catch(err => {
+            console.log('⚠️ لم تتم المزامنة:', err.message);
+        });
+    }
 }
 
 // تحميل التطبيق عند فتح الصفحة
@@ -268,24 +277,35 @@ async function addProduct(event) {
         supplier: document.getElementById('supplier').value
     };
 
-    showLoading('جاري إضافة المنتج...');
-    const result = await saveProductToAPI(product);
-    hideLoading();
-    setButtonLoading(submitBtn, false);
+    // إضافة ID للمنتج
+    product.id = Date.now();
+    product.createdAt = new Date().toISOString();
+    product.updatedAt = new Date().toISOString();
     
-    if (result.success) {
-        products.push(result.product);
-        showAlert('success', `✅ تم إضافة "${product.name}" بنجاح!`);
-        document.getElementById('productForm').reset();
-        
-        // الانتقال لعرض المنتجات
-        setTimeout(() => {
-            showTab('products');
-            document.querySelector('[onclick="showTab(\'products\')"]').classList.add('active');
-        }, 1000);
+    // ✅ حفظ فوري في LocalStorage
+    products.push(product);
+    saveProductsLocally(products);
+    
+    setButtonLoading(submitBtn, false);
+    showAlert('success', `✅ تم إضافة "${product.name}" بنجاح!`);
+    document.getElementById('productForm').reset();
+    displayProducts();
+    updateDashboard();
+    
+    // 🌐 رفع للسحابة في الخلفية
+    if (navigator.onLine) {
+        saveProductToAPI(product).catch(() => {
+            addPendingChange('product', 'add', product);
+        });
     } else {
-        showAlert('error', '❌ فشل في إضافة المنتج');
+        addPendingChange('product', 'add', product);
     }
+    
+    // الانتقال لعرض المنتجات
+    setTimeout(() => {
+        showTab('products');
+        document.querySelector('[onclick="showTab(\'products\')"]').classList.add('active');
+    }, 500);
 }
 
 // عرض المنتجات
@@ -414,18 +434,22 @@ function filterProducts() {
 // حذف منتج
 async function deleteProduct(id) {
     if (await customConfirm('سيتم حذف هذا المنتج نهائياً من النظام', 'حذف المنتج', 'danger')) {
-        showLoading('جاري حذف المنتج...');
-        const result = await deleteProductFromAPI(id);
-        hideLoading();
+        // ✅ حذف فوري من LocalStorage
+        products = products.filter(p => p.id !== id);
+        saveProductsLocally(products);
         
-        if (result.success) {
-            products = products.filter(p => p.id !== id);
-            showAlert('success', '✅ تم حذف المنتج بنجاح');
-            displayProducts();
-            updateDashboard();
-            updateCapitalDisplay();
+        showAlert('success', '✅ تم حذف المنتج بنجاح');
+        displayProducts();
+        updateDashboard();
+        updateCapitalDisplay();
+        
+        // 🌐 حذف من السحابة في الخلفية
+        if (navigator.onLine) {
+            deleteProductFromAPI(id).catch(() => {
+                addPendingChange('product', 'delete', { id });
+            });
         } else {
-            showAlert('error', '❌ فشل في حذف المنتج');
+            addPendingChange('product', 'delete', { id });
         }
     }
 }
@@ -449,8 +473,10 @@ async function sellProduct(id) {
         return;
     }
 
-    // تحديث الكمية
+    // تحديث الكمية محلياً
     product.quantity -= qty;
+    product.updatedAt = new Date().toISOString();
+    saveProductsLocally(products);
     
     // إضافة عملية البيع
     const sale = {
@@ -465,18 +491,26 @@ async function sellProduct(id) {
         date: new Date().toISOString()
     };
     
-    // حفظ البيع في API
-    const result = await saveSaleToAPI(sale);
+    // ✅ حفظ البيع محلياً
+    sales.push(sale);
+    saveSalesLocally(sales);
     
-    if (result.success) {
-        sales.push(result.sale);
-        showAlert('success', `✅ تم بيع ${qty} قطعة من "${product.name}" بقيمة ${sale.total} ج.م`);
-        displayProducts();
-        updateDashboard();
+    showAlert('success', `✅ تم بيع ${qty} قطعة من "${product.name}" بقيمة ${sale.total} ج.م`);
+    displayProducts();
+    updateDashboard();
+    
+    // 🌐 رفع للسحابة في الخلفية
+    if (navigator.onLine) {
+        Promise.all([
+            updateProductInAPI(product.id, { quantity: product.quantity }),
+            saveSaleToAPI(sale)
+        ]).catch(() => {
+            addPendingChange('product', 'update', product);
+            addPendingChange('sale', 'add', sale);
+        });
     } else {
-        // إرجاع الكمية في حالة الفشل
-        product.quantity += qty;
-        showAlert('error', '❌ فشل في حفظ عملية البيع');
+        addPendingChange('product', 'update', product);
+        addPendingChange('sale', 'add', sale);
     }
 }
 
@@ -2109,20 +2143,27 @@ async function updateProduct(event) {
         quantity: parseInt(document.getElementById('editQuantity').value),
         minStock: parseInt(document.getElementById('editMinStock').value) || 3,
         category: document.getElementById('editCategory').value,
-        supplier: document.getElementById('editSupplier').value
+        supplier: document.getElementById('editSupplier').value,
+        updatedAt: new Date().toISOString()
     };
 
-    const result = await updateProductInAPI(productId, updates);
+    // ✅ تحديث محلياً فوراً
+    products[productIndex] = { ...products[productIndex], ...updates, id: productId };
+    saveProductsLocally(products);
     
-    if (result.success) {
-        products[productIndex] = result.product;
-        showAlert('success', `✅ تم تحديث "${products[productIndex].name}" بنجاح!`);
-        closeEditProductModal();
-        displayProducts();
-        updateDashboard();
-        updateCapitalDisplay();
+    showAlert('success', `✅ تم تحديث "${updates.name}" بنجاح!`);
+    closeEditProductModal();
+    displayProducts();
+    updateDashboard();
+    updateCapitalDisplay();
+    
+    // 🌐 رفع للسحابة في الخلفية
+    if (navigator.onLine) {
+        updateProductInAPI(productId, updates).catch(() => {
+            addPendingChange('product', 'update', { id: productId, ...updates });
+        });
     } else {
-        showAlert('error', '❌ فشل في تحديث المنتج');
+        addPendingChange('product', 'update', { id: productId, ...updates });
     }
 }
 

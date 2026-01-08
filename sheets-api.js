@@ -2,9 +2,23 @@
 // رابط Web App من Google Apps Script
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyi7zcaMB-shC4n8VkV0jstpYczad5E9k2CSJyJTq0lZ5n8-K0h5Xp4jYgVdayvSdPdfA/exec';
 
+// Cache للطلبات لتقليل الاستدعاءات
+const requestCache = new Map();
+const CACHE_DURATION = 30000; // 30 ثانية
+
 // دالة مساعدة للطلبات
 async function appsScriptRequest(action, data = {}) {
     try {
+        // التحقق من الـ cache أولاً للعمليات القراءة فقط
+        const cacheKey = `${action}_${JSON.stringify(data)}`;
+        if (action.startsWith('get') && requestCache.has(cacheKey)) {
+            const cached = requestCache.get(cacheKey);
+            if (Date.now() - cached.timestamp < CACHE_DURATION) {
+                console.log(`✅ استخدام cache لـ ${action}`);
+                return cached.data;
+            }
+        }
+        
         // استخدام GET بدل POST
         const url = new URL(APPS_SCRIPT_URL);
         url.searchParams.append('action', action);
@@ -17,11 +31,34 @@ async function appsScriptRequest(action, data = {}) {
         });
         
         const result = await response.json();
+        
+        // حفظ في الـ cache للعمليات القراءة
+        if (action.startsWith('get')) {
+            requestCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+        }
+        
         return result;
     } catch (error) {
         console.error('خطأ في الاتصال بـ Google Sheets:', error);
-        showAlert('error', '❌ خطأ في الاتصال. تحقق من الإنترنت.');
         return { success: false, error: error.message };
+    }
+}
+
+// مسح الـ cache عند التحديث
+function clearCache(action = null) {
+    if (action) {
+        // مسح cache محدد
+        for (const key of requestCache.keys()) {
+            if (key.startsWith(action)) {
+                requestCache.delete(key);
+            }
+        }
+    } else {
+        // مسح كل الـ cache
+        requestCache.clear();
     }
 }
 
@@ -37,11 +74,13 @@ async function loadProductsFromAPI() {
 }
 
 async function saveProductToAPI(product) {
+    clearCache('getProducts');
     const result = await appsScriptRequest('addProduct', product);
     return result;
 }
 
 async function updateProductInAPI(productId, updates) {
+    clearCache('getProducts');
     const result = await appsScriptRequest('updateProduct', {
         id: productId,
         updates: updates
@@ -50,6 +89,7 @@ async function updateProductInAPI(productId, updates) {
 }
 
 async function deleteProductFromAPI(productId) {
+    clearCache('getProducts');
     const result = await appsScriptRequest('deleteProduct', { id: productId });
     return result;
 }
@@ -66,11 +106,13 @@ async function loadSalesFromAPI() {
 }
 
 async function saveSaleToAPI(sale) {
+    clearCache('getSales');
     const result = await appsScriptRequest('addSale', sale);
     return result;
 }
 
 async function deleteSaleFromAPI(saleId) {
+    clearCache('getSales');
     const result = await appsScriptRequest('deleteSale', { id: saleId });
     return result;
 }
