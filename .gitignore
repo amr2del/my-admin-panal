@@ -1,5 +1,15 @@
-# Node modules
+# Dependencies
 node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+out/
+*.exe
+*.dmg
+*.AppImage
+*.deb
 
 # Database
 database.json
@@ -17,11 +27,18 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # Temporary files
 *.tmp
 *.temp
+
+# Icon backup
+icon-backup.ico

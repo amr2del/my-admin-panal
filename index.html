@@ -838,6 +838,202 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Sound Settings -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-volume-up"></i>
+                            إعدادات الصوت
+                        </h2>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <!-- تفعيل/تعطيل الأصوات -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--light); border-radius: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <span style="font-weight: 600; font-size: 15px;">
+                                    <i class="fas fa-bell"></i> تفعيل الأصوات التفاعلية
+                                </span>
+                                <small style="color: #64748b; font-size: 12px;">
+                                    تشغيل أصوات عند النقر على الأزرار والأقسام
+                                </small>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="soundToggle" onchange="handleSoundToggle()" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- مستوى الصوت -->
+                        <div style="padding: 15px; background: var(--light); border-radius: 8px;">
+                            <label style="font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <i class="fas fa-volume-down"></i>
+                                <span>مستوى الصوت</span>
+                                <span id="volumePercent" style="margin-right: auto; color: var(--primary); font-size: 14px;">30%</span>
+                            </label>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="30" 
+                                   oninput="handleVolumeChange(this.value)"
+                                   style="width: 100%; height: 6px; border-radius: 5px; background: linear-gradient(to left, var(--primary) 30%, #e2e8f0 30%); outline: none; -webkit-appearance: none; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #64748b;">
+                                <span>صامت</span>
+                                <span>عالي</span>
+                            </div>
+                        </div>
+
+                        <!-- اختبار الصوت -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <button class="btn btn-outline" onclick="testClickSound()" style="font-size: 13px;">
+                                <i class="fas fa-mouse-pointer"></i> اختبار النقر
+                            </button>
+                            <button class="btn btn-outline" onclick="testSuccessSound()" style="font-size: 13px;">
+                                <i class="fas fa-check-circle"></i> اختبار النجاح
+                            </button>
+                            <button class="btn btn-outline" onclick="testErrorSound()" style="font-size: 13px;">
+                                <i class="fas fa-times-circle"></i> اختبار الخطأ
+                            </button>
+                            <button class="btn btn-outline" onclick="testWarningSound()" style="font-size: 13px;">
+                                <i class="fas fa-exclamation-triangle"></i> اختبار التحذير
+                            </button>
+                        </div>
+
+                        <div style="border-top: 2px solid var(--light); margin: 10px 0;"></div>
+
+                        <!-- تخصيص الأصوات -->
+                        <div style="padding: 15px; background: #fef3c7; border-radius: 8px; border-right: 3px solid #f59e0b;">
+                            <h3 style="margin: 0 0 15px 0; font-size: 15px; color: #92400e;">
+                                <i class="fas fa-sliders-h"></i> تخصيص نوع الصوت لكل فئة
+                            </h3>
+                            
+                            <!-- صوت النقر العام -->
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-hand-pointer"></i> صوت النقر العام
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="clickSoundSelect" onchange="changeSoundProfile('click', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (ناعم)</option>
+                                        <option value="soft">هادئ جداً</option>
+                                        <option value="sharp">حاد وسريع</option>
+                                        <option value="deep">عميق</option>
+                                        <option value="high">عالي النبرة</option>
+                                    </select>
+                                    <button onclick="testCustomSound('click')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- صوت الأزرار -->
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-square"></i> صوت الأزرار
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="buttonSoundSelect" onchange="changeSoundProfile('button', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (متوسط)</option>
+                                        <option value="soft">هادئ</option>
+                                        <option value="sharp">حاد ومميز</option>
+                                        <option value="deep">عميق</option>
+                                        <option value="high">مرتفع</option>
+                                    </select>
+                                    <button onclick="testCustomSound('button')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- صوت القوائم -->
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-bars"></i> صوت القوائم الجانبية
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="navSoundSelect" onchange="changeSoundProfile('nav', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (هادئ)</option>
+                                        <option value="soft">هادئ جداً</option>
+                                        <option value="sharp">واضح</option>
+                                        <option value="deep">عميق ومريح</option>
+                                        <option value="high">خفيف ومرتفع</option>
+                                    </select>
+                                    <button onclick="testCustomSound('nav')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- صوت النجاح -->
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-check-circle" style="color: #10b981;"></i> صوت النجاح
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="successSoundSelect" onchange="changeSoundProfile('success', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (3 نغمات)</option>
+                                        <option value="soft">ناعم ومريح</option>
+                                        <option value="sharp">مبهج وسريع</option>
+                                        <option value="deep">عميق وطويل</option>
+                                        <option value="melodic">لحني (4 نغمات)</option>
+                                    </select>
+                                    <button onclick="testCustomSound('success')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- صوت الخطأ -->
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-times-circle" style="color: #ef4444;"></i> صوت الخطأ
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="errorSoundSelect" onchange="changeSoundProfile('error', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (تنازلي)</option>
+                                        <option value="soft">هادئ ولطيف</option>
+                                        <option value="sharp">قوي وواضح</option>
+                                        <option value="deep">عميق وطويل</option>
+                                        <option value="alert">تنبيه سريع</option>
+                                    </select>
+                                    <button onclick="testCustomSound('error')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- صوت التحذير -->
+                            <div style="margin-bottom: 0;">
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #475569;">
+                                    <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> صوت التحذير
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="warningSoundSelect" onchange="changeSoundProfile('warning', this.value)" 
+                                            style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                        <option value="default">افتراضي (متوسط)</option>
+                                        <option value="soft">هادئ</option>
+                                        <option value="sharp">واضح وقوي</option>
+                                        <option value="deep">عميق ومنخفض</option>
+                                        <option value="urgent">عاجل وسريع</option>
+                                    </select>
+                                    <button onclick="testCustomSound('warning')" class="btn btn-outline" style="padding: 8px 16px; font-size: 13px;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات إضافية -->
+                        <div style="padding: 12px; background: #e0f2fe; border-radius: 8px; border-right: 3px solid #0284c7;">
+                            <p style="margin: 0; font-size: 13px; color: #0c4a6e; line-height: 1.6;">
+                                <i class="fas fa-info-circle"></i>
+                                يتم حفظ جميع إعدادات الصوت تلقائياً
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1485,6 +1681,7 @@
     <script src="local-storage.js"></script>
     <script src="features.js"></script>
     <script src="pdf-export.js"></script>
+    <script src="sounds.js"></script>
     <script src="app.js"></script>
     
     <!-- Initialize sidebar state on page load -->
@@ -1493,6 +1690,131 @@
         if (window.innerWidth <= 768) {
             document.getElementById('sidebar').classList.add('collapsed');
         }
+        
+        // دوال التحكم في الأصوات
+        function handleSoundToggle() {
+            const toggle = document.getElementById('soundToggle');
+            const volumeSlider = document.getElementById('volumeSlider');
+            
+            if (window.soundManager) {
+                if (toggle.checked) {
+                    window.soundManager.enabled = true;
+                    localStorage.setItem('soundEnabled', 'true');
+                    volumeSlider.disabled = false;
+                    window.soundManager.playSuccess();
+                } else {
+                    window.soundManager.enabled = false;
+                    localStorage.setItem('soundEnabled', 'false');
+                    volumeSlider.disabled = true;
+                }
+            }
+        }
+        
+        function handleVolumeChange(value) {
+            const percent = document.getElementById('volumePercent');
+            const slider = document.getElementById('volumeSlider');
+            
+            percent.textContent = value + '%';
+            
+            // تحديث لون الـ slider
+            const percentage = (value / 100) * 100;
+            slider.style.background = `linear-gradient(to left, var(--primary) ${percentage}%, #e2e8f0 ${percentage}%)`;
+            
+            if (window.soundManager) {
+                window.soundManager.setVolume(value / 100);
+            }
+        }
+        
+        function testClickSound() {
+            if (window.soundManager) {
+                window.soundManager.playClick();
+            }
+        }
+        
+        function testSuccessSound() {
+            if (window.soundManager) {
+                window.soundManager.playSuccess();
+            }
+        }
+        
+        function testErrorSound() {
+            if (window.soundManager) {
+                window.soundManager.playError();
+            }
+        }
+        
+        function testWarningSound() {
+            if (window.soundManager) {
+                window.soundManager.playWarning();
+            }
+        }
+        
+        // تغيير نمط الصوت لفئة معينة
+        function changeSoundProfile(category, profile) {
+            if (window.soundManager) {
+                window.soundManager.setSoundProfile(category, profile);
+            }
+        }
+        
+        // اختبار صوت مخصص لفئة معينة
+        function testCustomSound(category) {
+            if (!window.soundManager) return;
+            
+            switch(category) {
+                case 'click':
+                    window.soundManager.playClick();
+                    break;
+                case 'button':
+                    window.soundManager.playButtonClick();
+                    break;
+                case 'nav':
+                    window.soundManager.playNavClick();
+                    break;
+                case 'success':
+                    window.soundManager.playSuccess();
+                    break;
+                case 'error':
+                    window.soundManager.playError();
+                    break;
+                case 'warning':
+                    window.soundManager.playWarning();
+                    break;
+            }
+        }
+        
+        // تحديث الإعدادات عند التحميل
+        window.addEventListener('load', () => {
+            if (window.soundManager) {
+                const toggle = document.getElementById('soundToggle');
+                const volumeSlider = document.getElementById('volumeSlider');
+                const volumePercent = document.getElementById('volumePercent');
+                
+                if (toggle) {
+                    toggle.checked = window.soundManager.enabled;
+                    volumeSlider.disabled = !window.soundManager.enabled;
+                }
+                
+                if (volumeSlider && volumePercent) {
+                    const volume = Math.round(window.soundManager.volume * 100);
+                    volumeSlider.value = volume;
+                    volumePercent.textContent = volume + '%';
+                    
+                    // تحديث لون الـ slider
+                    const percentage = volume;
+                    volumeSlider.style.background = `linear-gradient(to left, var(--primary) ${percentage}%, #e2e8f0 ${percentage}%)`;
+                }
+                
+                // تحديث قوائم الأصوات المخصصة
+                const soundCategories = ['click', 'button', 'nav', 'success', 'error', 'warning'];
+                soundCategories.forEach(category => {
+                    const select = document.getElementById(category + 'SoundSelect');
+                    if (select) {
+                        const currentProfile = window.soundManager.getCurrentProfile(category);
+                        select.value = currentProfile;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

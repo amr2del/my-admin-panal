@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>تحميل أيقونة 256x256</title>
+</head>
+<body>
+    <canvas id="canvas" width="256" height="256"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // رسم تدرج
+        const gradient = ctx.createLinearGradient(0, 0, 256, 256);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 256, 256);
+        
+        // رسم أيقونة
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 5;
+        
+        ctx.font = 'bold 100px "Segoe UI Emoji"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white';
+        ctx.fillText('🔧', 128, 110);
+        
+        ctx.font = 'bold 28px "Segoe UI"';
+        ctx.fillText('قطع غيار', 128, 190);
+        
+        // تحميل تلقائي
+        canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'icon-256x256.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            document.body.innerHTML = '<h1 style="text-align:center;color:green;">✅ تم تحميل الأيقونة بنجاح!</h1><p style="text-align:center;">احفظ الملف باسم icon.png في مجلد المشروع</p>';
+        });
+    </script>
+</body>
+</html>
