@@ -161,7 +161,7 @@ body.sidebar-open {
     right: var(--sidebar-width);
     height: var(--header-height);
     background: white;
-    padding: 0 30px;
+    padding: 10px 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
