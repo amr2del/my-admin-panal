@@ -1056,11 +1056,11 @@ async function loadPurchaseInvoicesFromAPI() {
 // Initialize all features on app load
 async function initializeFeatures() {
     try {
-        // ⚡ تحميل سريع من LocalStorage أولاً
-        window.expenses = getExpensesLocally();
-        window.customers = getFromLocalStorage('spareparts_customers') || [];
-        window.suppliers = getFromLocalStorage('spareparts_suppliers') || [];
-        window.purchaseInvoices = getFromLocalStorage('spareparts_purchase_invoices') || [];
+        // ⚡ تحميل سريع من قاعدة البيانات أولاً
+        window.expenses = await getExpensesLocally() || [];
+        window.customers = getFromLocalStorage('spareparts_customers', []);
+        window.suppliers = getFromLocalStorage('spareparts_suppliers', []);
+        window.purchaseInvoices = getFromLocalStorage('spareparts_purchase_invoices', []);
         
         expenses = window.expenses;
         customers = window.customers;

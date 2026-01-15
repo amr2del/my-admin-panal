@@ -1,3 +1,66 @@
+// ============ حماية التطبيق - التحقق من تسجيل الدخول ============
+window.addEventListener('DOMContentLoaded', async () => {
+    // التحقق من تسجيل الدخول
+    let isLoggedIn = false;
+    let username = '';
+    
+    // في تطبيق Electron، استخدام IPC للتحقق من المستخدم الحالي
+    if (typeof window.electronAPI !== 'undefined' && window.electronAPI.getCurrentUser) {
+        try {
+            const currentUser = await window.electronAPI.getCurrentUser();
+            if (currentUser) {
+                isLoggedIn = true;
+                username = currentUser.username;
+                console.log('✅ المستخدم مسجل دخول:', username);
+            } else {
+                console.log('⚠️  لا يوجد مستخدم مسجل دخول');
+            }
+        } catch (error) {
+            console.error('❌ خطأ في التحقق من المستخدم:', error);
+        }
+    } else {
+        // في المتصفح، استخدام localStorage
+        isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        username = localStorage.getItem('username') || '';
+    }
+    
+    // إذا لم يكن المستخدم مسجل دخول، إعادة توجيهه لصفحة تسجيل الدخول
+    if (!isLoggedIn) {
+        console.log('❌ المستخدم غير مسجل دخول، إعادة التوجيه...');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // عرض اسم المستخدم في الهيدر
+    if (username) {
+        const userNameElements = document.querySelectorAll('#userName, .user-name');
+        userNameElements.forEach(el => {
+            el.textContent = username;
+        });
+    }
+    
+    console.log('✅ التطبيق جاهز للاستخدام');
+});
+
+// تسجيل الخروج
+async function logout() {
+    if (confirm('هل تريد تسجيل الخروج؟')) {
+        // في Electron، استخدام IPC
+        if (typeof window.electronAPI !== 'undefined' && window.electronAPI.logout) {
+            await window.electronAPI.logout();
+        }
+        
+        // مسح localStorage أيضاً
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('username');
+        localStorage.removeItem('loginTime');
+        
+        window.location.href = 'login.html';
+    }
+}
+
+// ============ البيانات الأساسية ============
+
 // تخزين البيانات (سيتم تحميلها من الباك اند)
 let products = [];
 let sales = [];
@@ -1672,8 +1735,30 @@ function exportSales() {
 }
 
 // ===== Settings Functions =====
+
+// تحميل ذكي للإعدادات: من SQLite أولاً ثم Google Sheets
+async function loadSettings() {
+    // محاولة التحميل من SQLite أولاً (سريع)
+    if (typeof window.db !== 'undefined') {
+        const localSettings = await window.db.getAllSettings();
+        if (localSettings && Object.keys(localSettings).length > 0) {
+            return localSettings;
+        }
+    }
+    
+    // إذا لم توجد في SQLite، تحميل من Google Sheets
+    const apiSettings = await loadSettingsFromAPI();
+    
+    // حفظ في SQLite للمرة القادمة
+    if (typeof window.db !== 'undefined' && apiSettings) {
+        await window.db.saveAllSettings(apiSettings);
+    }
+    
+    return apiSettings || {};
+}
+
 async function updateSettings() {
-    const settings = await loadSettingsFromAPI();
+    const settings = await loadSettings();
     
     document.getElementById('shopName').value = settings.shopName || 'محل قطع غيار الموتوسيكلات';
     document.getElementById('shopAddress').value = settings.shopAddress || 'القاهرة، مصر';
@@ -1695,7 +1780,7 @@ async function saveUserProfile(event) {
     const name = document.getElementById('adminName').value;
     const role = document.getElementById('adminRole').value;
     
-    const settings = await loadSettingsFromAPI();
+    const settings = await loadSettings();
     settings.userName = name;
     settings.userRole = role;
     
@@ -1731,7 +1816,7 @@ async function previewAvatar(event) {
 }
 
 async function updateAvatarDisplay() {
-    const settings = await loadSettingsFromAPI();
+    const settings = await loadSettings();
     const savedName = settings.userName || 'Admin';
     const savedAvatar = settings.adminAvatar;
     
@@ -1770,11 +1855,17 @@ async function loadUserProfile() {
 async function saveShopInfo(event) {
     event.preventDefault();
     
-    const settings = await loadSettingsFromAPI();
+    const settings = await loadSettings();
     settings.shopName = document.getElementById('shopName').value;
     settings.shopAddress = document.getElementById('shopAddress').value;
     settings.shopPhone = document.getElementById('shopPhone').value;
     
+    // حفظ في SQLite أولاً (فوري)
+    if (typeof window.db !== 'undefined') {
+        await window.db.saveAllSettings(settings);
+    }
+    
+    // حفظ في Google Sheets (في الخلفية)
     const result = await saveSettingsToAPI(settings);
     
     if (result.success) {
@@ -1794,7 +1885,7 @@ function updateCapitalDisplay() {
     
     const capitalElement = document.getElementById('totalCapital');
     if (capitalElement) {
-        capitalElement.textContent = totalCapital.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+        capitalElement.textContent = totalCapital.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
     }
     
     // Update modal values
@@ -1804,21 +1895,21 @@ function updateCapitalDisplay() {
     const modalAvgPrice = document.getElementById('modalAvgPrice');
     
     if (modalCapital) {
-        modalCapital.textContent = totalCapital.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+        modalCapital.textContent = totalCapital.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
     }
     
     if (modalProducts) {
-        modalProducts.textContent = products.length;
+        modalProducts.textContent = products.length.toLocaleString('en-US');
     }
     
     const totalQuantity = products.reduce((sum, p) => sum + (parseInt(p.quantity) || 0), 0);
     if (modalQuantity) {
-        modalQuantity.textContent = totalQuantity.toLocaleString('ar-EG');
+        modalQuantity.textContent = totalQuantity.toLocaleString('en-US');
     }
     
     const avgPrice = products.length > 0 ? totalCapital / totalQuantity : 0;
     if (modalAvgPrice) {
-        modalAvgPrice.textContent = avgPrice.toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+        modalAvgPrice.textContent = avgPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
     }
 }
 
@@ -1913,12 +2004,31 @@ async function clearAllData() {
     try {
         showAlert('info', '⏳ جاري حذف جميع البيانات...');
         
-        // حذف جميع المنتجات
+        // حذف من SQLite أولاً (إذا كان متوفراً)
+        if (typeof window.db !== 'undefined') {
+            // حذف جميع المنتجات من SQLite
+            for (const product of products) {
+                await window.db.deleteProduct(product.id);
+            }
+            
+            // حذف جميع المبيعات من SQLite
+            for (const sale of sales) {
+                await window.db.deleteSale(sale.id);
+            }
+            
+            // حذف جميع المصروفات من SQLite
+            if (typeof expenses !== 'undefined' && expenses.length > 0) {
+                for (const expense of expenses) {
+                    await window.db.deleteExpense(expense.id);
+                }
+            }
+        }
+        
+        // حذف من Google Sheets API
         for (const product of products) {
             await deleteProductFromAPI(product.id);
         }
         
-        // حذف جميع المبيعات
         for (const sale of sales) {
             await deleteSaleFromAPI(sale.id);
         }
@@ -1933,6 +2043,11 @@ async function clearAllData() {
         if (typeof customers !== 'undefined') customers = [];
         if (typeof suppliers !== 'undefined') suppliers = [];
         if (typeof purchaseInvoices !== 'undefined') purchaseInvoices = [];
+        
+        // حفظ البيانات الفارغة إلى localStorage/SQLite
+        if (typeof saveProductsLocally === 'function') await saveProductsLocally([]);
+        if (typeof saveSalesLocally === 'function') await saveSalesLocally([]);
+        if (typeof saveExpensesLocally === 'function') await saveExpensesLocally([]);
         
         // حفظ البيانات الفارغة إلى API
         if (typeof saveDataToAPI === 'function') {

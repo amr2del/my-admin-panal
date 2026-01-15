@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>اختبار localStorage</title>
+</head>
+<body style="padding: 20px; font-family: Arial;">
+    <h2>اختبار localStorage في Electron</h2>
+    <div id="result"></div>
+    
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        // اختبار localStorage
+        try {
+            // حفظ بيانات
+            localStorage.setItem('test', 'working');
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('username', 'admin');
+            
+            // قراءة البيانات
+            const test = localStorage.getItem('test');
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const username = localStorage.getItem('username');
+            
+            resultDiv.innerHTML = `
+                <p>✅ localStorage يعمل بشكل صحيح</p>
+                <p>test: ${test}</p>
+                <p>isLoggedIn: ${isLoggedIn}</p>
+                <p>username: ${username}</p>
+                <hr>
+                <p>جميع المفاتيح في localStorage:</p>
+                <ul>
+                    ${Object.keys(localStorage).map(key => 
+                        `<li>${key}: ${localStorage.getItem(key)}</li>`
+                    ).join('')}
+                </ul>
+            `;
+            
+            console.log('✅ localStorage يعمل');
+            console.log('جميع البيانات:', localStorage);
+        } catch (error) {
+            resultDiv.innerHTML = `<p style="color: red;">❌ خطأ: ${error.message}</p>`;
+            console.error('❌ localStorage لا يعمل:', error);
+        }
+    </script>
+</body>
+</html>

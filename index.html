@@ -200,6 +200,10 @@
                     <div style="font-weight: 600; font-size: 13px;" id="userName">Admin</div>
                     <div style="font-size: 11px; color: #64748b;">مدير النظام</div>
                 </div>
+                <button onclick="logout()" style="margin-right: 15px; padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; transition: all 0.3s;" title="تسجيل الخروج">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>خروج</span>
+                </button>
             </div>
         </div>
     </header>
@@ -1678,7 +1682,7 @@
     <!-- HTML2PDF Library for Arabic Support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="sheets-api.js"></script>
-    <script src="local-storage.js"></script>
+    <script src="local-storage-sqlite.js"></script>
     <script src="features.js"></script>
     <script src="pdf-export.js"></script>
     <script src="sounds.js"></script>
