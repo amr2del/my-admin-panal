@@ -43,8 +43,11 @@ loginForm.addEventListener('submit', async (e) => {
         
         // التحقق من وجود electronAPI (في تطبيق Electron)
         if (typeof window.electronAPI !== 'undefined' && window.electronAPI.login) {
+            console.log('✅ تم العثور على electronAPI، جاري إرسال طلب تسجيل الدخول...');
             result = await window.electronAPI.login(username, password);
+            console.log('📥 استجابة تسجيل الدخول:', result);
         } else {
+            console.log('⚠️ electronAPI غير موجود، استخدام وضع الاختبار');
             // للاختبار في المتصفح - استخدام بيانات افتراضية
             result = {
                 success: username === 'admin' && password === 'admin123',
