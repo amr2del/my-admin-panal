@@ -760,6 +760,64 @@
                     </form>
                 </div>
 
+                <!-- Account Security -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-shield-alt"></i>
+                            الأمان وتسجيل الدخول
+                        </h2>
+                    </div>
+                    <form id="accountSecurityForm" onsubmit="updateLoginCredentials(event)">
+                        <div class="form-group">
+                            <label>اسم المستخدم الحالي</label>
+                            <input type="text" id="currentUsername" readonly style="background: var(--light); cursor: not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label>كلمة المرور الحالية</label>
+                            <div style="position: relative;">
+                                <input type="password" id="currentPassword" readonly style="background: var(--light); cursor: not-allowed; padding-left: 45px;">
+                                <button type="button" onclick="togglePasswordVisibility('currentPassword')" 
+                                        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--primary); cursor: pointer; font-size: 16px;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 2px solid var(--light); margin: 20px 0;"></div>
+                        
+                        <div class="form-group">
+                            <label>اسم المستخدم الجديد</label>
+                            <input type="text" id="newUsername" placeholder="اترك فارغاً للإبقاء على الحالي" minlength="3">
+                            <small style="color: #64748b; font-size: 12px;">لا يقل عن 3 أحرف</small>
+                        </div>
+                        <div class="form-group">
+                            <label>كلمة المرور الجديدة</label>
+                            <div style="position: relative;">
+                                <input type="password" id="newPassword" placeholder="اترك فارغاً للإبقاء على الحالي" minlength="6">
+                                <button type="button" onclick="togglePasswordVisibility('newPassword')" 
+                                        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--primary); cursor: pointer; font-size: 16px;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small style="color: #64748b; font-size: 12px;">لا تقل عن 6 أحرف</small>
+                        </div>
+                        <div class="form-group">
+                            <label>تأكيد كلمة المرور</label>
+                            <div style="position: relative;">
+                                <input type="password" id="confirmPassword" placeholder="أعد إدخال كلمة المرور الجديدة">
+                                <button type="button" onclick="togglePasswordVisibility('confirmPassword')" 
+                                        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--primary); cursor: pointer; font-size: 16px;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key"></i> تحديث بيانات الدخول
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Shop Info -->
                 <div class="content-card">
                     <div class="card-header">

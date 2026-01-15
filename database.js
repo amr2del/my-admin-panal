@@ -13,30 +13,60 @@ let db;
 
 async function initDatabase() {
     try {
+        console.log('🔄 بدء تهيئة قاعدة البيانات...');
+        console.log('📁 مسار قاعدة البيانات:', DB_PATH);
+        
         // تحميل مكتبة sql.js
+        console.log('📦 تحميل مكتبة sql.js...');
         const initSqlJs = require('sql.js');
-        SQL = await initSqlJs();
+        
+        // إعدادات sql.js للعمل في بيئة production
+        const SQL_CONFIG = {
+            locateFile: (file) => {
+                // في بيئة production (ASAR)، ابحث في مجلد node_modules.asar.unpacked
+                if (process.env.NODE_ENV === 'production' || app.isPackaged) {
+                    const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sql.js', 'dist', file);
+                    if (fs.existsSync(unpackedPath)) {
+                        console.log('📍 استخدام مسار ASAR unpacked:', unpackedPath);
+                        return unpackedPath;
+                    }
+                }
+                // المسار الافتراضي
+                const defaultPath = path.join(__dirname, 'node_modules', 'sql.js', 'dist', file);
+                console.log('📍 استخدام المسار الافتراضي:', defaultPath);
+                return defaultPath;
+            }
+        };
+        
+        SQL = await initSqlJs(SQL_CONFIG);
+        console.log('✅ تم تحميل sql.js بنجاح');
         
         // محاولة تحميل قاعدة بيانات موجودة
         if (fs.existsSync(DB_PATH)) {
+            console.log('📂 العثور على قاعدة بيانات موجودة، جاري التحميل...');
             const buffer = fs.readFileSync(DB_PATH);
             db = new SQL.Database(buffer);
             console.log('✅ تم تحميل قاعدة البيانات الموجودة');
         } else {
             // إنشاء قاعدة بيانات جديدة
+            console.log('🆕 إنشاء قاعدة بيانات جديدة...');
             db = new SQL.Database();
             console.log('✅ تم إنشاء قاعدة بيانات جديدة');
         }
         
         // إنشاء الجداول
+        console.log('🏗️ إنشاء الجداول...');
         createTables();
         
         // حفظ قاعدة البيانات
+        console.log('💾 حفظ قاعدة البيانات...');
         saveDatabase();
         
+        console.log('✅ اكتملت تهيئة قاعدة البيانات بنجاح');
         return true;
     } catch (error) {
         console.error('❌ خطأ في تهيئة قاعدة البيانات:', error);
+        console.error('📋 تفاصيل الخطأ:', error.stack);
         return false;
     }
 }
@@ -206,6 +236,10 @@ function createTables() {
 
 function saveDatabase() {
     try {
+        if (!db) {
+            console.error('❌ لا يمكن حفظ قاعدة البيانات: قاعدة البيانات غير مهيئة');
+            return false;
+        }
         const data = db.export();
         const buffer = Buffer.from(data);
         fs.writeFileSync(DB_PATH, buffer);
@@ -220,6 +254,10 @@ function saveDatabase() {
 
 function getAllProducts() {
     try {
+        if (!db) {
+            console.error('❌ قاعدة البيانات غير مهيئة');
+            return [];
+        }
         const stmt = db.prepare('SELECT * FROM products ORDER BY updatedAt DESC');
         const products = [];
         while (stmt.step()) {
@@ -680,6 +718,12 @@ function createBackup() {
 
 function authenticateUser(username, password) {
     try {
+        // التحقق من أن قاعدة البيانات مهيئة
+        if (!db) {
+            console.error('❌ قاعدة البيانات غير مهيئة');
+            return { success: false, message: 'قاعدة البيانات غير مهيئة' };
+        }
+        
         console.log(`🔐 محاولة تسجيل الدخول:`);
         console.log(`   اسم المستخدم: "${username}" (طول: ${username.length})`);
         console.log(`   كلمة المرور: "${password}" (طول: ${password.length})`);
@@ -749,6 +793,24 @@ function getAllUsers() {
     } catch (error) {
         console.error('خطأ في جلب المستخدمين:', error);
         return [];
+    }
+}
+
+function getUserWithPassword(userId) {
+    try {
+        if (!db) {
+            console.error('❌ قاعدة البيانات غير مهيئة');
+            return null;
+        }
+        
+        const stmt = db.prepare('SELECT id, username, password, fullName, role, isActive FROM users WHERE id = ?');
+        stmt.bind([userId]);
+        const result = stmt.step() ? stmt.getAsObject() : null;
+        stmt.free();
+        return result;
+    } catch (error) {
+        console.error('خطأ في جلب المستخدم:', error);
+        return null;
     }
 }
 
@@ -879,6 +941,7 @@ module.exports = {
     // Authentication
     authenticateUser,
     getAllUsers,
+    getUserWithPassword,
     addUser,
     updateUser,
     deleteUser,
@@ -886,6 +949,12 @@ module.exports = {
     // Admin
     resetDefaultUser: () => {
         try {
+            // التحقق من أن قاعدة البيانات مهيئة
+            if (!db) {
+                console.error('❌ قاعدة البيانات غير مهيئة');
+                return { success: false, error: 'قاعدة البيانات غير مهيئة' };
+            }
+            
             // حذف جميع المستخدمين
             db.run('DELETE FROM users');
             

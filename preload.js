@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     logout: () => ipcRenderer.invoke('auth:logout'),
     resetDefaultUser: () => ipcRenderer.invoke('auth:resetDefaultUser'),
     getAllUsers: () => ipcRenderer.invoke('auth:getAllUsers'),
+    getUserWithPassword: (userId) => ipcRenderer.invoke('auth:getUserWithPassword', userId),
     addUser: (user) => ipcRenderer.invoke('auth:addUser', user),
     updateUser: (id, updates) => ipcRenderer.invoke('auth:updateUser', id, updates),
     deleteUser: (id) => ipcRenderer.invoke('auth:deleteUser', id)

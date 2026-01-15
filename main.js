@@ -186,11 +186,25 @@ function createMenu() {
 
 // عند استعداد التطبيق
 app.whenReady().then(async () => {
-    // تهيئة قاعدة البيانات
-    await db.initDatabase();
-    
-    // فتح نافذة تسجيل الدخول أولاً
-    createLoginWindow();
+    try {
+        // تهيئة قاعدة البيانات
+        console.log('🔄 جاري تهيئة قاعدة البيانات...');
+        const result = await db.initDatabase();
+        
+        if (!result) {
+            console.error('❌ فشل في تهيئة قاعدة البيانات');
+            app.quit();
+            return;
+        }
+        
+        console.log('✅ تم تهيئة قاعدة البيانات بنجاح');
+        
+        // فتح نافذة تسجيل الدخول أولاً
+        createLoginWindow();
+    } catch (error) {
+        console.error('❌ خطأ حرج في تهيئة التطبيق:', error);
+        app.quit();
+    }
 });
 
 // إنهاء التطبيق عند إغلاق جميع النوافذ (ما عدا macOS)
@@ -217,14 +231,30 @@ let currentUser = null;
 
 // Authentication
 ipcMain.handle('auth:login', async (event, username, password) => {
-    const result = db.authenticateUser(username, password);
-    if (result.success) {
-        // حفظ بيانات المستخدم
-        currentUser = result.user;
-        // فتح النافذة الرئيسية عند نجاح تسجيل الدخول
-        createWindow();
+    try {
+        console.log('📨 تلقي طلب تسجيل دخول من الواجهة');
+        console.log(`   اسم المستخدم: ${username}`);
+        
+        const result = db.authenticateUser(username, password);
+        
+        if (result.success) {
+            console.log('✅ تسجيل دخول ناجح، فتح النافذة الرئيسية...');
+            // حفظ بيانات المستخدم
+            currentUser = result.user;
+            // فتح النافذة الرئيسية عند نجاح تسجيل الدخول
+            createWindow();
+        } else {
+            console.log('❌ فشل تسجيل الدخول:', result.message);
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('❌ خطأ في معالج تسجيل الدخول:', error);
+        return { 
+            success: false, 
+            message: 'حدث خطأ في معالجة طلب تسجيل الدخول: ' + error.message 
+        };
     }
-    return result;
 });
 
 // الحصول على المستخدم الحالي
@@ -245,6 +275,10 @@ ipcMain.handle('auth:resetDefaultUser', async () => {
 
 ipcMain.handle('auth:getAllUsers', async () => {
     return db.getAllUsers();
+});
+
+ipcMain.handle('auth:getUserWithPassword', async (event, userId) => {
+    return db.getUserWithPassword(userId);
 });
 
 ipcMain.handle('auth:addUser', async (event, user) => {

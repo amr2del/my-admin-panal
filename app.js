@@ -2465,3 +2465,136 @@ function playAlertSound() {
         }
     }
 }
+// ============ إدارة بيانات تسجيل الدخول ============
+
+// تحميل بيانات المستخدم الحالي
+async function loadCurrentUserCredentials() {
+    try {
+        if (typeof window.electronAPI !== 'undefined' && window.electronAPI.getCurrentUser) {
+            const user = await window.electronAPI.getCurrentUser();
+            if (user && user.id) {
+                // الحصول على بيانات المستخدم مع كلمة المرور
+                const userWithPassword = await window.electronAPI.getUserWithPassword(user.id);
+                
+                if (userWithPassword) {
+                    document.getElementById('currentUsername').value = userWithPassword.username || '';
+                    document.getElementById('currentPassword').value = userWithPassword.password || '';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل بيانات المستخدم:', error);
+    }
+}
+
+// إظهار/إخفاء كلمة المرور
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// تحديث بيانات تسجيل الدخول
+async function updateLoginCredentials(event) {
+    event.preventDefault();
+    
+    const newUsername = document.getElementById('newUsername').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    
+    // التحقق من أن هناك تحديث
+    if (!newUsername && !newPassword) {
+        showAlert('يرجى إدخال اسم المستخدم أو كلمة المرور الجديدة', 'warning');
+        return;
+    }
+    
+    // التحقق من تطابق كلمات المرور
+    if (newPassword && newPassword !== confirmPassword) {
+        showAlert('كلمات المرور غير متطابقة', 'error');
+        return;
+    }
+    
+    // التحقق من طول اسم المستخدم
+    if (newUsername && newUsername.length < 3) {
+        showAlert('اسم المستخدم يجب أن لا يقل عن 3 أحرف', 'error');
+        return;
+    }
+    
+    // التحقق من طول كلمة المرور
+    if (newPassword && newPassword.length < 6) {
+        showAlert('كلمة المرور يجب أن لا تقل عن 6 أحرف', 'error');
+        return;
+    }
+    
+    try {
+        if (typeof window.electronAPI !== 'undefined' && window.electronAPI.getCurrentUser) {
+            const user = await window.electronAPI.getCurrentUser();
+            
+            if (!user) {
+                showAlert('لم يتم العثور على المستخدم الحالي', 'error');
+                return;
+            }
+            
+            // تحضير البيانات المحدثة
+            const updates = {};
+            if (newUsername) updates.username = newUsername;
+            if (newPassword) updates.password = newPassword;
+            
+            // تحديث بيانات المستخدم
+            const result = await window.electronAPI.updateUser(user.id, updates);
+            
+            if (result) {
+                showAlert('✅ تم تحديث بيانات الدخول بنجاح', 'success');
+                
+                // تحديث القيم المعروضة
+                if (newUsername) {
+                    document.getElementById('currentUsername').value = newUsername;
+                }
+                if (newPassword) {
+                    document.getElementById('currentPassword').value = newPassword;
+                }
+                
+                // مسح الحقول
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                
+                // تنبيه المستخدم بتسجيل الدخول مرة أخرى
+                setTimeout(() => {
+                    if (confirm('تم تحديث بيانات الدخول. هل تريد تسجيل الخروج وإعادة تسجيل الدخول بالبيانات الجديدة؟')) {
+                        logout();
+                    }
+                }, 1500);
+            } else {
+                showAlert('❌ فشل تحديث بيانات الدخول', 'error');
+            }
+        } else {
+            showAlert('هذه الميزة متاحة فقط في تطبيق سطح المكتب', 'warning');
+        }
+    } catch (error) {
+        console.error('خطأ في تحديث بيانات الدخول:', error);
+        showAlert('❌ حدث خطأ: ' + error.message, 'error');
+    }
+}
+
+// تحميل بيانات المستخدم عند فتح تبويب الإعدادات
+document.addEventListener('DOMContentLoaded', () => {
+    // إضافة حدث عند النقر على تبويب الإعدادات
+    const settingsTab = document.querySelector('[onclick*="settings"]');
+    if (settingsTab) {
+        const originalOnClick = settingsTab.onclick;
+        settingsTab.onclick = function() {
+            if (originalOnClick) originalOnClick.call(this);
+            loadCurrentUserCredentials();
+        };
+    }
+});
