@@ -28,7 +28,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <i class="fas fa-motorcycle"></i>
+                <i class="fas fa-motorcycle" style="color: white; font-size: 28px;"></i>
             </div>
             <div class="logo-text">
                 <h2>قطع الغيار</h2>
@@ -40,7 +40,7 @@
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a class="nav-link active" onclick="showTab('dashboard')">
-                        <i class="fas fa-th-large"></i>
+                        <i class="fas fa-gauge-high"></i>
                         <span>لوحة التحكم</span>
                     </a>
                 </li>
@@ -52,49 +52,49 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('products')">
-                        <i class="fas fa-boxes"></i>
+                        <i class="fas fa-box-open"></i>
                         <span>إدارة المخزون</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('expenses')">
-                        <i class="fas fa-receipt"></i>
+                        <i class="fas fa-file-invoice-dollar"></i>
                         <span>المصروفات</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('customers')">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-user-group"></i>
                         <span>العملاء</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('suppliers')">
-                        <i class="fas fa-truck"></i>
+                        <i class="fas fa-truck-fast"></i>
                         <span>الموردين</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('debts')">
-                        <i class="fas fa-hand-holding-usd"></i>
+                        <i class="fas fa-hand-holding-dollar"></i>
                         <span>الديون والتقسيط</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('purchases')">
-                        <i class="fas fa-shopping-cart"></i>
+                        <i class="fas fa-cart-shopping"></i>
                         <span>فواتير الشراء</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('reports')">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-chart-column"></i>
                         <span>التقارير</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" onclick="showTab('settings')">
-                        <i class="fas fa-cog"></i>
+                        <i class="fas fa-gear"></i>
                         <span>الإعدادات</span>
                     </a>
                 </li>
@@ -249,15 +249,15 @@
                     <span style="font-weight: 600;">بيع سريع</span>
                 </button>
                 <button class="quick-action-btn" onclick="openAddProductModal()" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; padding: 20px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform 0.2s;">
-                    <i class="fas fa-plus-circle" style="font-size: 32px;"></i>
+                    <i class="fas fa-box-open" style="font-size: 32px;"></i>
                     <span style="font-weight: 600;">إضافة منتج</span>
                 </button>
                 <button class="quick-action-btn" onclick="showTab('expenses')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 20px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform 0.2s;">
-                    <i class="fas fa-receipt" style="font-size: 32px;"></i>
+                    <i class="fas fa-file-invoice-dollar" style="font-size: 32px;"></i>
                     <span style="font-weight: 600;">مصروفات</span>
                 </button>
                 <button class="quick-action-btn" onclick="showTab('customers')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 20px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform 0.2s;">
-                    <i class="fas fa-users" style="font-size: 32px;"></i>
+                    <i class="fas fa-user-group" style="font-size: 32px;"></i>
                     <span style="font-weight: 600;">العملاء</span>
                 </button>
                 <button class="quick-action-btn" onclick="exportFinancialReportPDF()" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; border: none; padding: 20px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform 0.2s;">
@@ -271,10 +271,10 @@
                 <div class="stat-card" onclick="showTab('products')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon purple">
-                            <i class="fas fa-boxes"></i>
+                            <i class="fas fa-box-open"></i>
                         </div>
-                        <div class="stat-trend up">
-                            <i class="fas fa-arrow-up"></i> 12%
+                        <div class="stat-trend up" id="productsTrend">
+                            <i class="fas fa-arrow-up" id="productsTrendIcon"></i> <span id="productsTrendValue">0%</span>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -289,10 +289,10 @@
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon green">
-                            <i class="fas fa-dollar-sign"></i>
+                            <i class="fas fa-sack-dollar"></i>
                         </div>
-                        <div class="stat-trend up">
-                            <i class="fas fa-arrow-up"></i> 8%
+                        <div class="stat-trend up" id="inventoryValueTrend">
+                            <i class="fas fa-arrow-up" id="inventoryValueTrendIcon"></i> <span id="inventoryValueTrendValue">0%</span>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -307,10 +307,10 @@
                 <div class="stat-card" onclick="showTab('products')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon orange">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <i class="fas fa-triangle-exclamation"></i>
                         </div>
                         <div class="stat-trend down" id="lowStockTrend">
-                            <i class="fas fa-arrow-down"></i> 3
+                            <i class="fas fa-arrow-down" id="lowStockTrendIcon"></i> <span id="lowStockTrendValue">0</span>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -325,10 +325,10 @@
                 <div class="stat-card" onclick="showTab('sales')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon red">
-                            <i class="fas fa-shopping-cart"></i>
+                            <i class="fas fa-cart-shopping"></i>
                         </div>
-                        <div class="stat-trend up">
-                            <i class="fas fa-arrow-up"></i> 23%
+                        <div class="stat-trend up" id="salesTodayTrend">
+                            <i class="fas fa-arrow-up" id="salesTodayTrendIcon"></i> <span id="salesTodayTrendValue">0%</span>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -346,7 +346,7 @@
                 <div class="stat-card" onclick="showTab('customers')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon blue">
-                            <i class="fas fa-users"></i>
+                            <i class="fas fa-user-group"></i>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -361,7 +361,7 @@
                 <div class="stat-card" onclick="showTab('expenses')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon orange">
-                            <i class="fas fa-money-bill-wave"></i>
+                            <i class="fas fa-money-bill-trend-up"></i>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -376,7 +376,7 @@
                 <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: rgba(255,255,255,0.2);">
-                            <i class="fas fa-hand-holding-usd"></i>
+                            <i class="fas fa-hand-holding-dollar"></i>
                         </div>
                     </div>
                     <div class="stat-content">
@@ -391,7 +391,7 @@
                 <div class="stat-card" onclick="showTab('debts')" style="cursor: pointer;">
                     <div class="stat-header">
                         <div class="stat-icon red">
-                            <i class="fas fa-exclamation-circle"></i>
+                            <i class="fas fa-circle-exclamation"></i>
                         </div>
                     </div>
                     <div class="stat-content">

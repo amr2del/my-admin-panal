@@ -95,7 +95,7 @@ body.sidebar-open {
 .logo {
     width: 42px;
     height: 42px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: transparent;
     border-radius: 10px;
     display: flex;
     align-items: center;

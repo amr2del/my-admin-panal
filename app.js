@@ -579,22 +579,72 @@ async function sellProduct(id) {
 
 // تحديث لوحة التحكم
 function updateDashboard() {
+    // الحصول على البيانات المحفوظة من اليوم السابق
+    const yesterdayData = JSON.parse(localStorage.getItem('yesterdayStats') || '{}');
+    const today = new Date().toDateString();
+    
     // إجمالي المنتجات
-    document.getElementById('totalProducts').textContent = products.length;
+    const totalProductsCount = products.length;
+    document.getElementById('totalProducts').textContent = totalProductsCount;
+    
+    // حساب نسبة التغيير في عدد المنتجات
+    if (yesterdayData.totalProducts) {
+        const productChange = ((totalProductsCount - yesterdayData.totalProducts) / yesterdayData.totalProducts * 100).toFixed(1);
+        updateTrendIndicator('productsTrend', 'productsTrendIcon', 'productsTrendValue', productChange);
+    }
 
     // قيمة المخزون
-    const totalValue = products.reduce((sum, p) => sum + (p.sellingPrice * p.quantity), 0);
+    const totalValue = products.reduce((sum, p) => {
+        const price = parseFloat(p.sellingPrice) || 0;
+        const qty = parseFloat(p.quantity) || 0;
+        return sum + (price * qty);
+    }, 0);
     document.getElementById('totalValue').textContent = totalValue.toFixed(2) + ' ج.م';
+    
+    // حساب نسبة التغيير في قيمة المخزون
+    if (yesterdayData.totalValue) {
+        const valueChange = ((totalValue - yesterdayData.totalValue) / yesterdayData.totalValue * 100).toFixed(1);
+        updateTrendIndicator('inventoryValueTrend', 'inventoryValueTrendIcon', 'inventoryValueTrendValue', valueChange);
+    }
 
     // المنتجات المنخفضة
     const lowStock = products.filter(p => p.quantity <= p.minStock);
-    document.getElementById('lowStockCount').textContent = lowStock.length;
+    const lowStockCount = lowStock.length;
+    document.getElementById('lowStockCount').textContent = lowStockCount;
+    
+    // تحديث عدد المنتجات المنخفضة في المؤشر
+    const lowStockTrendValue = document.getElementById('lowStockTrendValue');
+    if (lowStockTrendValue) lowStockTrendValue.textContent = lowStockCount;
+    
+    // تحديث اتجاه المنتجات المنخفضة
+    if (yesterdayData.lowStockCount !== undefined) {
+        const lowStockChange = lowStockCount - yesterdayData.lowStockCount;
+        const lowStockTrendEl = document.getElementById('lowStockTrend');
+        const lowStockTrendIcon = document.getElementById('lowStockTrendIcon');
+        
+        if (lowStockTrendEl && lowStockTrendIcon) {
+            if (lowStockChange > 0) {
+                lowStockTrendEl.className = 'stat-trend down';
+                lowStockTrendIcon.className = 'fas fa-arrow-up';
+            } else if (lowStockChange < 0) {
+                lowStockTrendEl.className = 'stat-trend up';
+                lowStockTrendIcon.className = 'fas fa-arrow-down';
+            }
+        }
+    }
 
     // مبيعات اليوم
-    const today = new Date().toDateString();
     const todaySales = sales.filter(s => new Date(s.date).toDateString() === today);
     const todaySalesTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
     document.getElementById('todaySales').textContent = todaySalesTotal.toFixed(2) + ' ج.م';
+    
+    // حساب نسبة التغيير في المبيعات
+    if (yesterdayData.todaySales) {
+        const salesChange = yesterdayData.todaySales > 0 
+            ? ((todaySalesTotal - yesterdayData.todaySales) / yesterdayData.todaySales * 100).toFixed(1)
+            : (todaySalesTotal > 0 ? 100 : 0);
+        updateTrendIndicator('salesTodayTrend', 'salesTodayTrendIcon', 'salesTodayTrendValue', salesChange);
+    }
 
     // حساب العملاء (من features.js)
     const customers = window.customers || [];
@@ -684,6 +734,56 @@ function updateDashboard() {
     
     // تحديث عداد التنبيهات
     document.getElementById('notificationCount').textContent = lowStock.length;
+    
+    // حفظ بيانات اليوم للمقارنة غداً
+    saveTodayStats(totalProductsCount, totalValue, todaySalesTotal, lowStockCount);
+}
+
+// دالة لتحديث مؤشر الاتجاه
+function updateTrendIndicator(trendId, iconId, valueId, changePercent) {
+    const trendElement = document.getElementById(trendId);
+    const iconElement = document.getElementById(iconId);
+    const valueElement = document.getElementById(valueId);
+    
+    if (!trendElement || !iconElement || !valueElement) return;
+    
+    const change = parseFloat(changePercent);
+    
+    if (change > 0) {
+        trendElement.className = 'stat-trend up';
+        iconElement.className = 'fas fa-arrow-up';
+        valueElement.textContent = change + '%';
+    } else if (change < 0) {
+        trendElement.className = 'stat-trend down';
+        iconElement.className = 'fas fa-arrow-down';
+        valueElement.textContent = Math.abs(change) + '%';
+    } else {
+        // عرض 0% بدلاً من الإخفاء
+        trendElement.className = 'stat-trend';
+        iconElement.className = 'fas fa-minus';
+        valueElement.textContent = '0%';
+    }
+}
+
+// دالة لحفظ بيانات اليوم
+function saveTodayStats(totalProducts, totalValue, todaySales, lowStockCount) {
+    const lastSaveDate = localStorage.getItem('lastStatsSaveDate');
+    const today = new Date().toDateString();
+    
+    // إذا كان يوم جديد، احفظ بيانات الأمس
+    if (lastSaveDate && lastSaveDate !== today) {
+        const currentStats = JSON.parse(localStorage.getItem('currentStats') || '{}');
+        localStorage.setItem('yesterdayStats', JSON.stringify(currentStats));
+    }
+    
+    // احفظ البيانات الحالية
+    localStorage.setItem('currentStats', JSON.stringify({
+        totalProducts,
+        totalValue,
+        todaySales,
+        lowStockCount
+    }));
+    localStorage.setItem('lastStatsSaveDate', today);
 }
 
 // عرض آخر المبيعات في لوحة التحكم
