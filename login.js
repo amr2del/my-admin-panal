@@ -19,10 +19,6 @@ loginForm.addEventListener('submit', async (e) => {
     const password = document.getElementById('password').value.trim();
     const rememberMe = document.getElementById('rememberMe').checked;
     
-    console.log('📝 محاولة تسجيل الدخول من الواجهة:');
-    console.log('   Username length:', username.length, 'chars');
-    console.log('   Password length:', password.length, 'chars');
-    
     // إخفاء أي تنبيهات سابقة
     hideAlert();
     
@@ -43,11 +39,8 @@ loginForm.addEventListener('submit', async (e) => {
         
         // التحقق من وجود electronAPI (في تطبيق Electron)
         if (typeof window.electronAPI !== 'undefined' && window.electronAPI.login) {
-            console.log('✅ تم العثور على electronAPI، جاري إرسال طلب تسجيل الدخول...');
             result = await window.electronAPI.login(username, password);
-            console.log('📥 استجابة تسجيل الدخول:', result);
         } else {
-            console.log('⚠️ electronAPI غير موجود، استخدام وضع الاختبار');
             // للاختبار في المتصفح - استخدام بيانات افتراضية
             result = {
                 success: username === 'admin' && password === 'admin123',
@@ -70,8 +63,13 @@ loginForm.addEventListener('submit', async (e) => {
             
             showAlert('✅ تم تسجيل الدخول بنجاح! جاري التحميل...', 'success');
             
+            // في المتصفح، إعادة توجيه لصفحة التطبيق
+            if (typeof window.electronAPI === 'undefined') {
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
             // في تطبيق Electron، النافذة الرئيسية ستفتح تلقائياً من main.js
-            // لا حاجة للانتقال هنا، فقط انتظر إغلاق نافذة تسجيل الدخول
         } else {
             showAlert('❌ اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
             loginBtn.classList.remove('loading');
