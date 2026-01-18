@@ -144,9 +144,14 @@ async function quickLoadData() {
 
 // Fallback للتحميل من localStorage (للمتصفحات العادية)
 function quickLoadFromLocalStorage() {
+    console.log('📦 تحميل البيانات من localStorage...');
+    
     products = JSON.parse(localStorage.getItem('spareparts_products') || '[]');
     sales = JSON.parse(localStorage.getItem('spareparts_sales') || '[]');
     const settings = JSON.parse(localStorage.getItem('spareparts_settings') || '{}');
+    
+    console.log(`✅ تم تحميل ${products.length} منتج من localStorage`);
+    console.log(`✅ تم تحميل ${sales.length} عملية بيع من localStorage`);
     
     if (settings && Object.keys(settings).length > 0) {
         applySettings(settings);
@@ -530,9 +535,10 @@ function getDataFromLocal(key, defaultValue = []) {
 function saveToLocalStorage(key, data) {
     try {
         localStorage.setItem(key, JSON.stringify(data));
+        console.log(`💾 تم حفظ ${Array.isArray(data) ? data.length : 'البيانات'} في ${key}`);
         return true;
     } catch (error) {
-        console.error('خطأ في حفظ البيانات:', error);
+        console.error('❌ خطأ في حفظ البيانات:', error);
         return false;
     }
 }
