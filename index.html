@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏪</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="pos-professional.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -373,6 +374,21 @@
                     </div>
                 </div>
 
+                <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <h3 style="color: white;">مكسب رأس المال</h3>
+                        <div class="stat-value" id="dashCapitalGain" style="color: white;">0 ج.م</div>
+                    </div>
+                    <div class="stat-footer" style="color: rgba(255,255,255,0.9);">
+                        <i class="fas fa-info-circle"></i> الفرق بين سعر البيع والشراء
+                    </div>
+                </div>
+
                 <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: rgba(255,255,255,0.2);">
@@ -534,95 +550,131 @@
 
         <!-- Sales Tab -->
         <div id="sales" class="tab-content">
-            <div class="page-header">
-                <h1 class="page-title"><i class="fas fa-cash-register"></i> نقطة البيع</h1>
-                <p class="page-subtitle">اختر المنتجات وأتمم عملية البيع بسهولة</p>
-            </div>
-
-            <div class="pos-grid">
-                <!-- Product Selection -->
-                <div class="pos-products-section">
-                    <div class="card-header">
-                        <h2 class="card-title">
+            <div class="pos-professional-container">
+                <!-- Header Section -->
+                <div class="pos-pro-header">
+                    <div class="pos-pro-title-section">
+                        <div class="pos-pro-icon">
+                            <i class="fas fa-cash-register"></i>
+                        </div>
+                        <div>
+                            <h1 class="pos-pro-title">نظام نقطة البيع</h1>
+                            <p class="pos-pro-subtitle">Point of Sale System - POS</p>
+                        </div>
+                    </div>
+                    <div class="pos-pro-stats">
+                        <div class="pos-stat-mini">
                             <i class="fas fa-boxes"></i>
-                            المنتجات المتاحة
-                        </h2>
-                        <span id="productsCount" style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 700;">
-                            <i class="fas fa-cube"></i> 0 منتج
-                        </span>
+                            <span id="productsCount">0</span>
+                            <label>منتج متاح</label>
+                        </div>
+                        <div class="pos-stat-mini">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span id="cartCount">0</span>
+                            <label>في السلة</label>
+                        </div>
                     </div>
-                    <div class="search-bar" style="margin-bottom: 20px;">
-                        <input type="text" id="posSearch" placeholder="ابحث بالاسم أو الباركود..." oninput="filterPOSProducts()">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <div id="posProductsList" class="pos-products-list"></div>
                 </div>
 
-                <!-- Cart -->
-                <div class="cart-section">
-                    <div class="cart-header">
-                        <h2 class="card-title" style="margin: 0;">
-                            <i class="fas fa-shopping-cart"></i>
-                            السلة
-                        </h2>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <span id="cartCount" style="background: var(--success); color: white; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 15px;">
-                                0
-                            </span>
-                            <button class="btn btn-danger btn-icon" onclick="clearCart()" title="إفراغ السلة">
-                                <i class="fas fa-trash-alt"></i>
+                <!-- Main POS Layout -->
+                <div class="pos-pro-layout">
+                    <!-- Products Panel -->
+                    <div class="pos-products-panel">
+                        <div class="panel-header">
+                            <div class="panel-title">
+                                <i class="fas fa-th-large"></i>
+                                <span>كتالوج المنتجات</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="toggleViewBtn" onclick="togglePOSView()" 
+                                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(102,126,234,0.3);" 
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(102,126,234,0.4)'" 
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(102,126,234,0.3)'">
+                                    <i class="fas fa-table"></i> جدول
+                                </button>
+                                <div class="search-box-modern">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="posSearch" placeholder="ابحث بالاسم، الباركود، أو الفئة..." oninput="filterPOSProducts()">
+                                    <div class="search-line"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="posProductsList" class="products-grid-modern"></div>
+                    </div>
+
+                    <!-- Checkout Panel -->
+                    <div class="pos-checkout-panel">
+                        <div class="checkout-header">
+                            <div class="checkout-title">
+                                <i class="fas fa-receipt"></i>
+                                <span>تفاصيل الطلب</span>
+                            </div>
+                            <button class="btn-clear-cart" onclick="clearCart()" title="إفراغ السلة">
+                                <i class="fas fa-trash-can"></i>
+                                <span>مسح الكل</span>
                             </button>
                         </div>
-                    </div>
-                    
-                    <div id="cartItems" style="min-height: 180px; margin-bottom: 20px;"></div>
-                    
-                    <div class="cart-summary">
-                        <div class="cart-summary-row">
-                            <span class="label"><i class="fas fa-calculator"></i> المجموع الفرعي:</span>
-                            <span class="value" id="subtotal">0.00 ج.م</span>
-                        </div>
                         
-                        <div class="discount-input-group">
-                            <span class="label"><i class="fas fa-percentage"></i> الخصم:</span>
-                            <input type="number" id="discount" value="0" min="0" step="0.01" 
-                                   oninput="updateCartTotal()" placeholder="0.00">
-                        </div>
+                        <div id="cartItems" class="cart-items-modern"></div>
                         
-                        <div class="cart-summary-row total">
-                            <span class="label"><i class="fas fa-money-bill-wave"></i> الإجمالي:</span>
-                            <span class="value" id="totalAmount">0.00 ج.م</span>
+                        <!-- Customer Info Section -->
+                        <div class="customer-info-section">
+                            <div class="section-title">
+                                <i class="fas fa-user-circle"></i>
+                                <span>معلومات العميل</span>
+                            </div>
+                            <div class="info-grid">
+                                <div class="info-field">
+                                    <i class="fas fa-user"></i>
+                                    <input type="text" id="customerName" placeholder="اسم العميل (اختياري)">
+                                </div>
+                                <div class="info-field">
+                                    <i class="fas fa-phone"></i>
+                                    <input type="tel" id="customerPhone" placeholder="رقم الهاتف (اختياري)">
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="form-group" style="margin-bottom: 14px;">
-                            <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                                <i class="fas fa-user"></i> اسم العميل
-                            </label>
-                            <input type="text" id="customerName" placeholder="اختياري" style="padding: 12px;">
+
+                        <!-- Payment Section -->
+                        <div class="payment-section">
+                            <div class="payment-method-selector">
+                                <label><i class="fas fa-wallet"></i> طريقة الدفع</label>
+                                <select id="paymentMethod">
+                                    <option value="cash">💵 نقدي - Cash</option>
+                                    <option value="card">💳 بطاقة - Card</option>
+                                    <option value="installment">📅 تقسيط - Installment</option>
+                                </select>
+                            </div>
+
+                            <div class="billing-summary">
+                                <div class="billing-row">
+                                    <span class="billing-label">المجموع الفرعي</span>
+                                    <span class="billing-value" id="subtotal">0.00 ج.م</span>
+                                </div>
+                                <div class="billing-row discount-row">
+                                    <span class="billing-label">
+                                        <i class="fas fa-tag"></i> الخصم
+                                    </span>
+                                    <div class="discount-input-modern">
+                                        <input type="number" id="discount" value="0" min="0" step="0.01" oninput="updateCartTotal()">
+                                        <span>ج.م</span>
+                                    </div>
+                                </div>
+                                <div class="billing-divider"></div>
+                                <div class="billing-row total-row">
+                                    <span class="billing-label">الإجمالي النهائي</span>
+                                    <span class="billing-value total" id="totalAmount">0.00 ج.م</span>
+                                </div>
+                            </div>
+
+                            <button class="btn-complete-sale" onclick="completeSale()">
+                                <div class="btn-content">
+                                    <i class="fas fa-check-double"></i>
+                                    <span>إتمام عملية البيع</span>
+                                </div>
+                                <div class="btn-shine"></div>
+                            </button>
                         </div>
-                        
-                        <div class="form-group" style="margin-bottom: 14px;">
-                            <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                                <i class="fas fa-phone"></i> رقم الهاتف
-                            </label>
-                            <input type="tel" id="customerPhone" placeholder="اختياري" style="padding: 12px;">
-                        </div>
-                        
-                        <div class="form-group" style="margin-bottom: 20px;">
-                            <label style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-                                <i class="fas fa-credit-card"></i> طريقة الدفع
-                            </label>
-                            <select id="paymentMethod" style="width: 100%; padding: 12px; border: 2px solid var(--light); border-radius: 10px; font-weight: 600; font-size: 15px;">
-                                <option value="cash">💵 نقدي</option>
-                                <option value="card">💳 بطاقة</option>
-                                <option value="installment">📅 تقسيط</option>
-                            </select>
-                        </div>
-                        
-                        <button class="complete-sale-btn" onclick="completeSale()">
-                            <i class="fas fa-check-circle"></i>
-                            <span>إتمام البيع</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -854,6 +906,21 @@
                         </h2>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 15px;">
+                        
+                        <!-- ⭐ زر الرفع اليدوي للسحابة -->
+                        <div style="padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 24px;"></i>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">رفع للسحابة (Backup)</h3>
+                                    <p style="margin: 5px 0 0; font-size: 13px; opacity: 0.9;">رفع نسخة احتياطية لـ Google Sheets</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="manualBackupToCloud()" class="btn" 
+                                    style="width: 100%; background: white; color: #667eea; border: none; font-weight: 600;">
+                                <i class="fas fa-cloud-upload-alt"></i> رفع الآن
+                            </button>
+                        </div>
                         <button class="btn btn-primary" onclick="exportData()">
                             <i class="fas fa-download"></i> تصدير جميع البيانات
                         </button>
@@ -863,6 +930,21 @@
                         <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
                         
                         <div style="border-top: 2px solid var(--light); margin: 15px 0;"></div>
+                        
+                        <!-- � زر الاستيراد من Google Sheets -->
+                        <div style="padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 12px; color: white;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <i class="fas fa-cloud-download-alt" style="font-size: 24px;"></i>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">دمج من السحابة</h3>
+                                    <p style="margin: 5px 0 0; font-size: 13px; opacity: 0.9;">جلب البيانات من Google Sheets ودمجها مع المحلية</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="mergeFromCloud()" class="btn" 
+                                    style="width: 100%; background: white; color: #00f2fe; border: none; font-weight: 600;">
+                                <i class="fas fa-code-branch"></i> دمج من السحابة
+                            </button>
+                        </div>
                         
                         <button class="btn btn-danger" onclick="clearAllData()">
                             <i class="fas fa-trash-alt"></i> مسح جميع البيانات
@@ -1130,6 +1212,17 @@
                     <div class="stat-content">
                         <h3>مصروفات الشهر</h3>
                         <div class="stat-value" id="expensesMonth">0 ج.م</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="stat-content">
+                        <h3 style="color: white;">مكسب رأس المال</h3>
+                        <div class="stat-value" id="capitalGainExpenses" style="color: white;">0 ج.م</div>
                     </div>
                 </div>
                 <div class="stat-card">

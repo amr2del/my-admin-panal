@@ -54,6 +54,9 @@ async function initDatabase() {
             console.log('✅ تم إنشاء قاعدة بيانات جديدة');
         }
         
+        // التحقق من إصدار قاعدة البيانات
+        const needsRebuild = checkDatabaseVersion();
+        
         // إنشاء الجداول
         console.log('🏗️ إنشاء الجداول...');
         createTables();
@@ -72,6 +75,14 @@ async function initDatabase() {
 }
 
 // ============ إنشاء الجداول ============
+
+// التحقق من إصدار قاعدة البيانات
+function checkDatabaseVersion() {
+    // ✅ لا حذف تلقائي - الجداول ستبقى بالبيانات
+    // يتم حذف البيانات القديمة عند المزامنة فقط
+    console.log('✅ قاعدة البيانات جاهزة');
+    return true;
+}
 
 function createTables() {
     // جدول المنتجات
@@ -97,18 +108,21 @@ function createTables() {
     db.run(`
         CREATE TABLE IF NOT EXISTS sales (
             id TEXT PRIMARY KEY,
-            productId TEXT NOT NULL,
+            productId TEXT,
             productName TEXT,
-            quantity INTEGER NOT NULL,
-            price REAL NOT NULL,
-            total REAL NOT NULL,
+            quantity INTEGER,
+            price REAL,
+            total REAL,
             discount REAL DEFAULT 0,
             finalTotal REAL NOT NULL,
             customer TEXT,
             paymentMethod TEXT,
             date TEXT DEFAULT CURRENT_TIMESTAMP,
             notes TEXT,
-            FOREIGN KEY (productId) REFERENCES products(id)
+            items TEXT,
+            phone TEXT,
+            subtotal REAL,
+            capitalGain REAL
         )
     `);
     
@@ -261,7 +275,14 @@ function getAllProducts() {
         const stmt = db.prepare('SELECT * FROM products ORDER BY updatedAt DESC');
         const products = [];
         while (stmt.step()) {
-            products.push(stmt.getAsObject());
+            const row = stmt.getAsObject();
+            // ✅ Convert column names to match app.js naming
+            products.push({
+                ...row,
+                sellingPrice: parseFloat(row.price) || 0,
+                purchasePrice: parseFloat(row.cost) || 0,
+                description: row.notes || ''
+            });
         }
         stmt.free();
         return products;
@@ -275,8 +296,19 @@ function getProductById(id) {
     try {
         const stmt = db.prepare('SELECT * FROM products WHERE id = ?');
         stmt.bind([id]);
-        const result = stmt.step() ? stmt.getAsObject() : null;
+        let result = stmt.step() ? stmt.getAsObject() : null;
         stmt.free();
+        
+        // ✅ Convert column names
+        if (result) {
+            result = {
+                ...result,
+                sellingPrice: parseFloat(result.price) || 0,
+                purchasePrice: parseFloat(result.cost) || 0,
+                description: result.notes || ''
+            };
+        }
+        
         return result;
     } catch (error) {
         console.error('خطأ في جلب المنتج:', error);
@@ -296,12 +328,12 @@ function addProduct(product) {
             product.name,
             product.category || '',
             product.quantity || 0,
-            product.price || 0,
-            product.cost || 0,
+            product.sellingPrice || product.price || 0,  // ✅ Support both names
+            product.purchasePrice || product.cost || 0,  // ✅ Support both names
             product.minStock || 0,
             product.barcode || '',
             product.supplier || '',
-            product.notes || '',
+            product.notes || product.description || '',
             product.image || ''
         ]);
         
@@ -316,13 +348,28 @@ function addProduct(product) {
 
 function updateProduct(id, updates) {
     try {
+        // ✅ Convert field names to database column names
+        const dbUpdates = { ...updates };
+        if (updates.sellingPrice !== undefined) {
+            dbUpdates.price = updates.sellingPrice;
+            delete dbUpdates.sellingPrice;
+        }
+        if (updates.purchasePrice !== undefined) {
+            dbUpdates.cost = updates.purchasePrice;
+            delete dbUpdates.purchasePrice;
+        }
+        if (updates.description !== undefined) {
+            dbUpdates.notes = updates.description;
+            delete dbUpdates.description;
+        }
+        
         const fields = [];
         const values = [];
         
-        Object.keys(updates).forEach(key => {
+        Object.keys(dbUpdates).forEach(key => {
             if (key !== 'id') {
                 fields.push(`${key} = ?`);
-                values.push(updates[key]);
+                values.push(dbUpdates[key]);
             }
         });
         
@@ -362,7 +409,16 @@ function getAllSales() {
         const stmt = db.prepare('SELECT * FROM sales ORDER BY date DESC');
         const sales = [];
         while (stmt.step()) {
-            sales.push(stmt.getAsObject());
+            const sale = stmt.getAsObject();
+            // تحويل items من JSON string إلى array
+            if (sale.items && typeof sale.items === 'string') {
+                try {
+                    sale.items = JSON.parse(sale.items);
+                } catch (e) {
+                    sale.items = [];
+                }
+            }
+            sales.push(sale);
         }
         stmt.free();
         return sales;
@@ -372,26 +428,99 @@ function getAllSales() {
     }
 }
 
+function getSaleById(id) {
+    try {
+        const stmt = db.prepare('SELECT * FROM sales WHERE id = ?');
+        stmt.bind([id]);
+        let result = stmt.step() ? stmt.getAsObject() : null;
+        stmt.free();
+        
+        // تحويل items من JSON string إلى array
+        if (result && result.items && typeof result.items === 'string') {
+            try {
+                result.items = JSON.parse(result.items);
+            } catch (e) {
+                result.items = [];
+            }
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('خطأ في جلب البيع:', error);
+        return null;
+    }
+}
+
+function updateSale(id, updates) {
+    try {
+        // جلب البيع الحالي
+        const current = getSaleById(id);
+        if (!current) return false;
+        
+        // دمج التحديثات
+        const updated = { ...current, ...updates };
+        
+        const stmt = db.prepare(`
+            UPDATE sales 
+            SET productId = ?, productName = ?, quantity = ?, price = ?, 
+                total = ?, discount = ?, finalTotal = ?, customer = ?, 
+                paymentMethod = ?, date = ?, notes = ?, items = ?, 
+                phone = ?, subtotal = ?, capitalGain = ?
+            WHERE id = ?
+        `);
+        
+        stmt.run([
+            updated.productId || null,
+            updated.productName || null,
+            updated.quantity || null,
+            updated.price || null,
+            updated.total || updated.finalTotal || 0,
+            updated.discount || 0,
+            updated.finalTotal || 0,
+            updated.customer || '',
+            updated.paymentMethod || 'نقدي',
+            updated.date || new Date().toISOString(),
+            updated.notes || '',
+            typeof updated.items === 'string' ? updated.items : JSON.stringify(updated.items || []),
+            updated.phone || '',
+            updated.subtotal || 0,
+            updated.capitalGain || 0,
+            id
+        ]);
+        
+        stmt.free();
+        saveDatabase();
+        return true;
+    } catch (error) {
+        console.error('خطأ في تحديث البيع:', error);
+        return false;
+    }
+}
+
 function addSale(sale) {
     try {
         const stmt = db.prepare(`
-            INSERT INTO sales (id, productId, productName, quantity, price, total, discount, finalTotal, customer, paymentMethod, date, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO sales (id, productId, productName, quantity, price, total, discount, finalTotal, customer, paymentMethod, date, notes, items, phone, subtotal, capitalGain)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         
         stmt.run([
             sale.id || Date.now().toString(),
-            sale.productId,
-            sale.productName,
-            sale.quantity,
-            sale.price,
-            sale.total,
+            sale.productId || null,
+            sale.productName || null,
+            sale.quantity || null,
+            sale.price || null,
+            sale.total || sale.finalTotal || 0,
             sale.discount || 0,
-            sale.finalTotal,
+            sale.finalTotal || 0,
             sale.customer || '',
             sale.paymentMethod || 'نقدي',
             sale.date || new Date().toISOString(),
-            sale.notes || ''
+            sale.notes || '',
+            sale.items ? JSON.stringify(sale.items) : null,
+            sale.phone || '',
+            sale.subtotal || 0,
+            sale.capitalGain || 0
         ]);
         
         stmt.free();
@@ -473,7 +602,144 @@ function deleteExpense(id) {
     }
 }
 
+function getExpenseById(id) {
+    try {
+        const stmt = db.prepare('SELECT * FROM expenses WHERE id = ?');
+        stmt.bind([id]);
+        let result = stmt.step() ? stmt.getAsObject() : null;
+        stmt.free();
+        return result;
+    } catch (error) {
+        console.error('خطأ في جلب المصروف:', error);
+        return null;
+    }
+}
+
+function updateExpense(id, updates) {
+    try {
+        // جلب المصروف الحالي
+        const current = getExpenseById(id);
+        if (!current) return false;
+        
+        // دمج التحديثات
+        const updated = { ...current, ...updates };
+        
+        const stmt = db.prepare(`
+            UPDATE expenses 
+            SET type = ?, amount = ?, description = ?, category = ?, date = ?
+            WHERE id = ?
+        `);
+        
+        stmt.run([
+            updated.type,
+            updated.amount,
+            updated.description || '',
+            updated.category || '',
+            updated.date || new Date().toISOString(),
+            id
+        ]);
+        
+        stmt.free();
+        saveDatabase();
+        return true;
+    } catch (error) {
+        console.error('خطأ في تحديث المصروف:', error);
+        return false;
+    }
+}
+
 // ============ عمليات رأس المال (Capital Transactions CRUD) ============
+
+// ============ عمليات المصروفات (Expenses CRUD) ============
+
+function getAllExpenses() {
+    try {
+        if (!db) {
+            console.error('❌ قاعدة البيانات غير مهيئة');
+            return [];
+        }
+        const stmt = db.prepare('SELECT * FROM expenses ORDER BY date DESC');
+        const expenses = [];
+        while (stmt.step()) {
+            expenses.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return expenses;
+    } catch (error) {
+        console.error('خطأ في جلب المصروفات:', error);
+        return [];
+    }
+}
+
+function addExpense(expense) {
+    try {
+        const stmt = db.prepare(`
+            INSERT OR REPLACE INTO expenses (id, type, description, amount, date, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        
+        stmt.run([
+            expense.id || Date.now(),
+            expense.type || 'other',
+            expense.description || '',
+            expense.amount || 0,
+            expense.date || new Date().toISOString().split('T')[0],
+            expense.createdAt || new Date().toISOString()
+        ]);
+        
+        stmt.free();
+        saveDatabase();
+        return true;
+    } catch (error) {
+        console.error('خطأ في إضافة المصروف:', error);
+        return false;
+    }
+}
+
+function deleteExpense(id) {
+    try {
+        const stmt = db.prepare('DELETE FROM expenses WHERE id = ?');
+        stmt.run([id]);
+        stmt.free();
+        saveDatabase();
+        return true;
+    } catch (error) {
+        console.error('خطأ في حذف المصروف:', error);
+        return false;
+    }
+}
+
+function saveAllExpensesToSQLite(expenses) {
+    try {
+        if (!expenses || !Array.isArray(expenses)) {
+            console.warn('⚠️ لا توجد مصروفات للحفظ');
+            return false;
+        }
+        
+        // حذف المصروفات القديمة أولاً
+        const deleteStmt = db.prepare('DELETE FROM expenses');
+        deleteStmt.run();
+        deleteStmt.free();
+        
+        // إضافة المصروفات الجديدة
+        console.log(`💾 حفظ ${expenses.length} مصروف في SQLite...`);
+        for (const expense of expenses) {
+            addExpense(expense);
+        }
+        
+        console.log(`✅ تم حفظ ${expenses.length} مصروف في SQLite`);
+        return true;
+    } catch (error) {
+        console.error('خطأ في حفظ المصروفات:', error);
+        return false;
+    }
+}
+
+function getAllExpensesFromSQLite() {
+    return getAllExpenses();
+}
+
+// ============ عمليات رأس المال (Capital Transactions) ============
 
 function getAllCapitalTransactions() {
     try {
@@ -910,13 +1176,19 @@ module.exports = {
     
     // Sales
     getAllSales,
+    getSaleById,
     addSale,
+    updateSale,
     deleteSale,
     
     // Expenses
     getAllExpenses,
+    getExpenseById,
     addExpense,
+    updateExpense,
     deleteExpense,
+    saveAllExpensesToSQLite,
+    getAllExpensesFromSQLite,
     
     // Capital
     getAllCapitalTransactions,

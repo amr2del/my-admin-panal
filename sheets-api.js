@@ -6,6 +6,9 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyi7zcaMB-shC4n
 const requestCache = new Map();
 const CACHE_DURATION = 30000; // 30 ثانية
 
+// تصدير الوظائف للاستخدام العالمي
+window.sheetsAPI = window.sheetsAPI || {};
+
 // دالة مساعدة للطلبات
 async function appsScriptRequest(action, data = {}) {
     try {
@@ -70,22 +73,52 @@ async function loadProductsFromAPI() {
         products = result.products || [];
         return products;
     }
-    return [];
+    return null; // فشل الاتصال
 }
 
 async function saveProductToAPI(product) {
+    // 1️⃣ حفظ في SQLite أولاً
+    if (!product.id) product.id = Date.now().toString();
+    
+    if (typeof window.db !== 'undefined' && window.db.addProduct) {
+        try {
+            await window.db.addProduct(product);
+            console.log('✅ تم حفظ المنتج في SQLite');
+        } catch (err) {
+            console.error('❌ فشل حفظ المنتج:', err);
+        }
+    }
+    
+    // 2️⃣ رفع لـ Google Sheets (backup)
     clearCache('getProducts');
-    const result = await appsScriptRequest('addProduct', product);
-    return result;
+    appsScriptRequest('addProduct', product).then(result => {
+        if (result.success) console.log('☁️ تم رفع المنتج لـ Google Sheets');
+    }).catch(err => console.warn('⚠️ فشل رفع المنتج:', err));
+    
+    return { success: true, product };
 }
 
 async function updateProductInAPI(productId, updates) {
+    // 1️⃣ تحديث في SQLite أولاً
+    if (typeof window.db !== 'undefined' && window.db.updateProduct) {
+        try {
+            await window.db.updateProduct(productId, updates);
+            console.log('✅ تم تحديث المنتج في SQLite');
+        } catch (err) {
+            console.error('❌ فشل تحديث المنتج:', err);
+        }
+    }
+    
+    // 2️⃣ رفع لـ Google Sheets (backup)
     clearCache('getProducts');
-    const result = await appsScriptRequest('updateProduct', {
+    appsScriptRequest('updateProduct', {
         id: productId,
         updates: updates
-    });
-    return result;
+    }).then(result => {
+        if (result.success) console.log('☁️ تم تحديث المنتج في Google Sheets');
+    }).catch(err => console.warn('⚠️ فشل تحديث المنتج في السحابة:', err));
+    
+    return { success: true };
 }
 
 async function deleteProductFromAPI(productId) {
@@ -102,13 +135,36 @@ async function loadSalesFromAPI() {
         sales = result.sales || [];
         return sales;
     }
-    return [];
+    return null; // فشل الاتصال
 }
 
 async function saveSaleToAPI(sale) {
+    // 1️⃣ حفظ في SQLite أولاً (أساسي)
+    if (!sale.id) sale.id = Date.now();
+    
+    if (typeof window.db !== 'undefined' && window.db.addSale) {
+        try {
+            await window.db.addSale(sale);
+            console.log('✅ تم حفظ البيع في SQLite');
+        } catch (err) {
+            console.error('❌ فشل حفظ البيع في SQLite:', err);
+            return { success: false, error: 'فشل الحفظ المحلي' };
+        }
+    }
+    
+    // 2️⃣ رفع لـ Google Sheets في الخلفية (backup)
     clearCache('getSales');
-    const result = await appsScriptRequest('addSale', sale);
-    return result;
+    appsScriptRequest('addSale', sale).then(result => {
+        if (result.success) {
+            console.log('☁️ تم رفع البيع لـ Google Sheets');
+        } else {
+            console.warn('⚠️ فشل رفع البيع لـ Google Sheets - المحفوظ محلياً آمن');
+        }
+    }).catch(err => {
+        console.warn('⚠️ خطأ في رفع البيع:', err);
+    });
+    
+    return { success: true, sale: sale };
 }
 
 async function deleteSaleFromAPI(saleId) {
@@ -124,7 +180,7 @@ async function loadSettingsFromAPI() {
     if (result.success) {
         return result.settings || {};
     }
-    return {};
+    return null; // فشل الاتصال
 }
 
 async function saveSettingsToAPI(settings) {
@@ -139,7 +195,7 @@ async function loadDataFromAPI(dataType) {
     if (result.success) {
         return result[dataType] || [];
     }
-    return [];
+    return null; // فشل الاتصال - ارجع null (ليس [])
 }
 
 async function saveDataToAPI(dataType, data) {
@@ -150,3 +206,38 @@ async function saveDataToAPI(dataType, data) {
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+// ============ وظائف الرفع الجماعي (Batch Upload) ============
+
+async function uploadAllProducts(products) {
+    console.log(`📤 رفع ${products.length} منتج للسحابة...`);
+    const result = await appsScriptRequest('uploadAllProducts', { products });
+    if (result && result.success) {
+        console.log('✅ تم رفع المنتجات بنجاح');
+    }
+    return result;
+}
+
+async function uploadAllSales(sales) {
+    console.log(`📤 رفع ${sales.length} عملية بيع للسحابة...`);
+    const result = await appsScriptRequest('uploadAllSales', { sales });
+    if (result && result.success) {
+        console.log('✅ تم رفع المبيعات بنجاح');
+    }
+    return result;
+}
+
+async function uploadAllExpenses(expenses) {
+    console.log(`📤 رفع ${expenses.length} مصروف للسحابة...`);
+    const result = await appsScriptRequest('saveExpenses', expenses);
+    if (result && result.success) {
+        console.log('✅ تم رفع المصروفات بنجاح');
+    }
+    return result;
+}
+
+// تسجيل الوظائف في window.sheetsAPI
+window.sheetsAPI.uploadAllProducts = uploadAllProducts;
+window.sheetsAPI.uploadAllSales = uploadAllSales;
+window.sheetsAPI.uploadAllExpenses = uploadAllExpenses;
+

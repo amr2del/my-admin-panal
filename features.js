@@ -39,21 +39,39 @@ let monthlyChartInstance = null;
 // ============================================
 
 function updateAnalytics() {
-    // Calculate total sales and profit
+    // Calculate total sales
     const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
+    
+    // Calculate total cost
     const totalCost = sales.reduce((sum, sale) => {
         return sum + sale.items.reduce((itemSum, item) => {
             const product = products.find(p => p.id === item.id);
             return itemSum + ((product?.purchasePrice || 0) * item.quantity);
         }, 0);
     }, 0);
-    const totalProfit = totalSales - totalCost;
+    
+    // 💰 Calculate total profit (مكسب رأس المال - الفرق فقط بين سعر البيع والشراء)
+    const totalProfit = sales.reduce((sum, sale) => {
+        return sum + sale.items.reduce((itemSum, item) => {
+            // البحث عن المنتج باستخدام item.productId أو item.id
+            const product = products.find(p => p.id === (item.productId || item.id));
+            if (!product) return itemSum;
+            // الفرق = (سعر البيع - سعر الشراء) × الكمية
+            const profit = (item.price - (product.purchasePrice || 0)) * item.quantity;
+            return itemSum + profit;
+        }, 0);
+    }, 0);
+    
     const profitMargin = totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(2) : 0;
 
-    // Update stats
-    document.getElementById('analyticsAllTimeSales').textContent = totalSales.toFixed(2) + ' ج.م';
-    document.getElementById('analyticsTotalProfit').textContent = totalProfit.toFixed(2) + ' ج.م';
-    document.getElementById('analyticsProfitMargin').textContent = profitMargin + '%';
+    // Update stats - with null checks
+    const allTimeSalesEl = document.getElementById('analyticsAllTimeSales');
+    const totalProfitEl = document.getElementById('analyticsTotalProfit');
+    const profitMarginEl = document.getElementById('analyticsProfitMargin');
+    
+    if (allTimeSalesEl) allTimeSalesEl.textContent = totalSales.toFixed(2) + ' ج.م';
+    if (totalProfitEl) totalProfitEl.textContent = totalProfit.toFixed(2) + ' ج.م';
+    if (profitMarginEl) profitMarginEl.textContent = profitMargin + '%';
 
     // Update charts
     updateSalesChart();
@@ -285,9 +303,31 @@ async function addExpense(event) {
         createdAt: formatDateTime()
     };
 
+    // 1️⃣ حفظ في SQLite مباشرة
+    if (typeof window.db !== 'undefined' && typeof window.db.addExpense === 'function') {
+        try {
+            await window.db.addExpense(expense);
+            console.log('✅ تم حفظ المصروف في SQLite');
+        } catch (err) {
+            console.error('❌ خطأ في حفظ المصروف في SQLite:', err);
+        }
+    }
+    
+    // 2️⃣ تحديث المتغير العام
     expenses.push(expense);
     window.expenses = expenses;
-    await saveExpensesToAPI();
+    
+    // 3️⃣ حفظ في localStorage كنسخة احتياطية
+    if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+    }
+    
+    // 4️⃣ رفع للسحابة في الخلفية
+    if (typeof saveDataToAPI === 'function' && navigator.onLine) {
+        saveDataToAPI('expenses', expenses).catch(() => {
+            console.warn('❌ فشل رفع المصروف للسحابة');
+        });
+    }
     
     if (typeof setButtonLoading === 'function') {
         setButtonLoading(submitBtn, false);
@@ -363,22 +403,60 @@ function updateExpenseStats() {
         return expDate.getMonth() === today.getMonth() && expDate.getFullYear() === today.getFullYear();
     }).reduce((sum, e) => sum + e.amount, 0);
 
-    // Calculate net profit (total sales - total expenses)
+    // Calculate total sales
     const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    
+    // Calculate capital gain (مكسب رأس المال - الفرق فقط)
+    const capitalGain = sales.reduce((sum, sale) => {
+        return sum + sale.items.reduce((itemSum, item) => {
+            // البحث عن المنتج باستخدام item.productId أو item.id
+            const product = products.find(p => p.id === (item.productId || item.id));
+            if (!product) return itemSum;
+            const profit = (item.price - (product.purchasePrice || 0)) * item.quantity;
+            return itemSum + profit;
+        }, 0);
+    }, 0);
+    
+    // Calculate net profit (total sales - total expenses)
     const netProfit = totalSales - totalExpenses;
 
     document.getElementById('expensesToday').textContent = todayExpenses.toFixed(2) + ' ج.م';
     document.getElementById('expensesMonth').textContent = monthExpenses.toFixed(2) + ' ج.م';
+    const capitalGainEl = document.getElementById('capitalGainExpenses');
+    if (capitalGainEl) capitalGainEl.textContent = capitalGain.toFixed(2) + ' ج.م';
     document.getElementById('netProfit').textContent = netProfit.toFixed(2) + ' ج.م';
 }
 
 async function deleteExpense(id) {
     const confirmed = await customConfirm('هل تريد حذف هذا المصروف؟', 'حذف مصروف', 'warning');
     if (confirmed) {
+        // 1️⃣ حذف من SQLite مباشرة
+        if (typeof window.db !== 'undefined' && typeof window.db.deleteExpense === 'function') {
+            try {
+                await window.db.deleteExpense(id);
+                console.log('✅ تم حذف المصروف من SQLite');
+            } catch (err) {
+                console.error('❌ خطأ في حذف المصروف من SQLite:', err);
+            }
+        }
+        
+        // 2️⃣ حذف من المتغير العام
         expenses = expenses.filter(e => e.id !== id);
         window.expenses = expenses;
-        await saveExpensesToAPI();
+        
+        // 3️⃣ حفظ في localStorage
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+        
+        // 4️⃣ حذف من السحابة في الخلفية
+        if (typeof saveDataToAPI === 'function' && navigator.onLine) {
+            saveDataToAPI('expenses', expenses).catch(() => {
+                console.warn('❌ فشل حذف المصروف من السحابة');
+            });
+        }
+        
         showAlert('success', '✅ تم حذف المصروف بنجاح!');
         displayExpenses();
         updateExpenseStats();
@@ -958,26 +1036,64 @@ function viewPurchaseDetails(invoiceId) {
 // ============================================
 
 async function saveExpensesToAPI() {
+    // 1️⃣ حفظ في SQLite أولاً (أساسي)
+    if (typeof saveAllExpensesToSQLite === 'function') {
+        try {
+            await saveAllExpensesToSQLite(expenses);
+            console.log('✅ تم حفظ المصروفات في SQLite');
+        } catch (err) {
+            console.error('❌ فشل حفظ المصروفات محلياً:', err);
+        }
+    }
+    
+    // 2️⃣ رفع لـ Google Sheets في الخلفية (backup)
     if (typeof saveDataToAPI === 'function') {
-        await saveDataToAPI('expenses', expenses);
+        saveDataToAPI('expenses', expenses).then(result => {
+            if (result && result.success) {
+                console.log('☁️ تم رفع المصروفات لـ Google Sheets');
+            }
+        }).catch(err => {
+            console.warn('⚠️ فشل رفع المصروفات للسحابة - المحفوظ محلياً آمن');
+        });
     } else {
+        // Fallback للمتصفح - localStorage فقط
         localStorage.setItem('expenses', JSON.stringify(expenses));
     }
 }
 
 async function loadExpensesFromAPI() {
     try {
-        if (typeof loadDataFromAPI === 'function') {
-            window.expenses = await loadDataFromAPI('expenses') || [];
-            expenses = window.expenses;
-        } else {
+        // 💾 تحميل من SQLite أولاً (المصدر الرئيسي)
+        if (typeof window.db !== 'undefined' && typeof window.db.getAllExpenses === 'function') {
+            try {
+                const sqliteExpenses = await window.db.getAllExpenses();
+                window.expenses = sqliteExpenses || [];
+                expenses = window.expenses;
+                console.log(`✅ تم تحميل ${expenses.length} مصروف من SQLite`);
+                return window.expenses;
+            } catch (err) {
+                console.error('❌ خطأ في تحميل المصروفات من SQLite:', err);
+            }
+        }
+        
+        // Fallback: تحميل من localStorage
+        if (typeof localStorage !== 'undefined') {
             window.expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
             expenses = window.expenses;
+            console.log(`📦 تم تحميل ${expenses.length} مصروف من localStorage`);
+            return window.expenses;
         }
+        
+        // Fallback نهائي
+        window.expenses = [];
+        expenses = window.expenses;
+        return window.expenses;
+        
     } catch (error) {
-        console.error('Error loading expenses:', error);
+        console.error('❌ خطأ في تحميل المصروفات:', error);
         window.expenses = [];
         expenses = [];
+        return [];
     }
 }
 

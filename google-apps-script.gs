@@ -169,6 +169,12 @@ function doGet(e) {
         case 'savePurchaseinvoices':
           response = savePurchaseinvoices(data);
           break;
+        case 'uploadAllProducts':
+          response = uploadAllProducts(data.products);
+          break;
+        case 'uploadAllSales':
+          response = uploadAllSales(data.sales);
+          break;
         default:
           response = { success: false, message: 'إجراء غير معروف' };
       }
@@ -681,3 +687,79 @@ function savePurchaseinvoices(invoicesData) {
   
   return { success: true, message: 'تم حفظ فواتير الشراء بنجاح' };
 }
+
+// ============ رفع جماعي (Batch Upload) ============
+
+function uploadAllProducts(productsArray) {
+  try {
+    const sheet = getSheet('Products');
+    
+    // حذف جميع البيانات القديمة (ما عدا الهيدر)
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+    
+    // إضافة المنتجات الجديدة
+    if (productsArray && productsArray.length > 0) {
+      const rows = productsArray.map(p => [
+        p.id,
+        p.name || '',
+        p.barcode || '',
+        p.description || '',
+        p.purchasePrice || 0,
+        p.sellingPrice || 0,
+        p.quantity || 0,
+        p.minStock || 3,
+        p.category || '',
+        p.supplier || '',
+        p.createdAt || new Date().toISOString(),
+        p.updatedAt || new Date().toISOString()
+      ]);
+      
+      sheet.getRange(2, 1, rows.length, 12).setValues(rows);
+    }
+    
+    return { success: true, message: `تم رفع ${productsArray.length} منتج` };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function uploadAllSales(salesArray) {
+  try {
+    const sheet = getSheet('Sales');
+    
+    // حذف جميع البيانات القديمة (ما عدا الهيدر)
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+    
+    // إضافة المبيعات الجديدة
+    if (salesArray && salesArray.length > 0) {
+      const rows = salesArray.map(s => [
+        s.id,
+        s.productId,
+        s.productName || '',
+        s.quantity || 0,
+        s.price || 0,
+        s.total || 0,
+        s.discount || 0,
+        s.finalTotal || 0,
+        s.paymentMethod || 'نقدي',
+        s.customerName || '',
+        s.customerPhone || '',
+        s.notes || '',
+        s.date || new Date().toISOString()
+      ]);
+      
+      sheet.getRange(2, 1, rows.length, 13).setValues(rows);
+    }
+    
+    return { success: true, message: `تم رفع ${salesArray.length} عملية بيع` };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+

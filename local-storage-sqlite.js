@@ -1,5 +1,28 @@
 // ============ نظام التخزين المحلي SQLite والمزامنة مع Google Sheets ============
 
+/*
+📋 استراتيجية التخزين والمزامنة:
+
+1. ⭐ Google Sheets = المصدر الرئيسي للحقيقة (Source of Truth)
+   - كل البيانات المهمة محفوظة في Google Sheets
+   - عند الاتصال بالنت، نحمل دائماً من Google Sheets أولاً
+   
+2. 💾 SQLite = Cache سريع + حماية Offline
+   - للوصول السريع للبيانات بدون انتظار
+   - نسخة محلية تُحدّث من Google Sheets
+   - تُستخدم فقط عند فصل النت
+   
+3. 📂 localStorage = Fallback نهائي
+   - للمتصفحات التي لا تدعم SQLite
+   - نسخة احتياطية إضافية
+   
+4. 🔄 آلية المزامنة:
+   - عند الإضافة/التعديل → حفظ محلي + رفع للسحابة
+   - عند فتح البرنامج → تحميل من Google Sheets (إذا متصل)
+   - عند الـ Sync → رفع التغييرات ثم تحميل من Google Sheets
+   - عند فصل النت → استخدام SQLite/localStorage
+*/
+
 // مفاتيح التخزين للنسخ الاحتياطي في localStorage
 const STORAGE_KEYS = {
     LAST_SYNC: 'spareparts_last_sync',
@@ -11,8 +34,10 @@ const STORAGE_KEYS = {
 let isOnline = navigator.onLine;
 let isSyncing = false;
 
-// التحقق من وجود واجهة قاعدة البيانات
+// ✅ تفعيل SQLite - قاعدة بيانات محلية سليمة
 const hasDatabase = typeof window.db !== 'undefined';
+
+console.log('📊 نظام التخزين: Google Sheets (رئيسي) → SQLite (cache) → localStorage (fallback)');
 
 // ============ ترحيل البيانات من localStorage إلى SQLite ============
 
@@ -104,15 +129,25 @@ async function migrateFromLocalStorage() {
 // ============ التحميل السريع من SQLite ============
 
 async function quickLoadData() {
+    console.log('🚀 بدء التحميل السريع...');
+    
+    // 💾 التحميل من SQLite فقط - Google Sheets للـ backup فقط
+    console.log('💾 تحميل البيانات من قاعدة البيانات المحلية...');
+    
+    // تحميل من SQLite
     if (!hasDatabase) {
         console.warn('⚠️ قاعدة البيانات غير متوفرة، استخدام localStorage');
         return quickLoadFromLocalStorage();
     }
     
     try {
+        console.log('💾 تحميل البيانات من SQLite...');
         // تحميل فوري من SQLite
         products = await window.db.getAllProducts();
         sales = await window.db.getAllSales();
+        
+        console.log(`📦 تم تحميل ${products.length} منتج من SQLite`);
+        console.log(`💰 تم تحميل ${sales.length} عملية بيع من SQLite`);
         
         const settings = await window.db.getAllSettings();
         
@@ -122,14 +157,17 @@ async function quickLoadData() {
         }
         
         // تحميل البيانات الإضافية
-        if (typeof window.expenses !== 'undefined') {
-            window.expenses = await window.db.getAllExpenses();
+        if (window.db.getAllExpenses) {
+            const loadedExpenses = await window.db.getAllExpenses();
+            window.expenses = loadedExpenses || [];
+            console.log(`💸 تم تحميل ${window.expenses.length} مصروف من SQLite`);
         }
-        if (typeof window.capitalTransactions !== 'undefined') {
+        if (window.db.getAllCapitalTransactions) {
             window.capitalTransactions = await window.db.getAllCapitalTransactions();
+            console.log(`💵 تم تحميل ${window.capitalTransactions?.length || 0} معاملة رأس مال من SQLite`);
         }
         
-        console.log('✅ تم تحميل البيانات من SQLite');
+        console.log('✅ تم تحميل البيانات من SQLite بنجاح');
         
         return {
             products,
@@ -147,6 +185,16 @@ function quickLoadFromLocalStorage() {
     console.log('📦 تحميل البيانات من localStorage...');
     
     products = JSON.parse(localStorage.getItem('spareparts_products') || '[]');
+    
+    // ✅ Validate products data
+    products = products.map(p => ({
+        ...p,
+        purchasePrice: parseFloat(p.purchasePrice) || 0,
+        sellingPrice: parseFloat(p.sellingPrice) || 0,
+        quantity: parseInt(p.quantity) || 0,
+        minStock: parseInt(p.minStock) || 3
+    }));
+    
     sales = JSON.parse(localStorage.getItem('spareparts_sales') || '[]');
     const settings = JSON.parse(localStorage.getItem('spareparts_settings') || '{}');
     
@@ -258,22 +306,34 @@ async function clearPendingChanges() {
 // ============ المزامنة مع Google Sheets ============
 
 async function syncWithCloud() {
-    if (isSyncing) return;
-    if (!isOnline) return;
+    if (isSyncing) {
+        console.log('⏳ المزامنة جارية بالفعل...');
+        return;
+    }
+    
+    if (!isOnline || !navigator.onLine) {
+        console.log('📵 لا يوجد اتصال بالإنترنت - تم إلغاء المزامنة');
+        return;
+    }
     
     isSyncing = true;
     
     try {
-        // 1. رفع التغييرات المعلقة أولاً
+        console.log('🔄 بدء المزامنة مع السحابة...');
+        
+        // 1️⃣ رفع التغييرات المعلقة للسحابة
         await uploadPendingChanges();
         
-        // 2. تنزيل آخر البيانات من السحابة
-        await downloadFromCloud();
+        // 2️⃣ تحميل من Google Sheets (المصدر الرئيسي)
+        const cloudSuccess = await downloadFromCloud();
         
-        // 3. تحديث وقت آخر مزامنة
-        localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
-        
-        console.log('✅ تمت المزامنة بنجاح');
+        if (cloudSuccess) {
+            // 3️⃣ تحديث وقت آخر مزامنة
+            localStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString());
+            console.log('✅ تمت المزامنة بنجاح - Google Sheets هو المصدر الرئيسي الآن');
+        } else {
+            console.warn('⚠️ فشلت المزامنة - البيانات المحلية محفوظة');
+        }
     } catch (error) {
         console.error('❌ خطأ في المزامنة:', error);
     } finally {
@@ -337,74 +397,159 @@ async function executePendingChange(change) {
 
 // تنزيل البيانات من السحابة
 async function downloadFromCloud() {
+    // ✅ فحص الاتصال قبل المتابعة
+    if (!isOnline || !navigator.onLine) {
+        console.log('⚠️ لا يوجد اتصال - تم إلغاء تنزيل البيانات');
+        return false;
+    }
+    
     try {
+        console.log('📥 تنزيل البيانات من Google Sheets...');
+        
         // تحميل البيانات من API (بالتوازي للسرعة)
-        const [productsData, salesData, settingsData] = await Promise.all([
+        const [productsData, salesData, settingsData, expensesData] = await Promise.all([
             loadProductsFromAPI(),
             loadSalesFromAPI(),
-            loadSettingsFromAPI()
+            loadSettingsFromAPI(),
+            loadDataFromAPI('expenses')
         ]);
         
-        // حفظ في SQLite - بدون تكرار
-        if (productsData && hasDatabase) {
-            // الحصول على المنتجات الموجودة
-            const existingProducts = await window.db.getAllProducts();
-            const existingIds = new Set(existingProducts.map(p => p.id));
-            
-            // إضافة أو تحديث المنتجات
-            for (const product of productsData) {
-                if (existingIds.has(product.id)) {
-                    // تحديث المنتج الموجود
-                    await window.db.updateProduct(product.id, product);
-                } else {
-                    // إضافة منتج جديد
-                    await window.db.addProduct(product);
-                }
-            }
+        console.log(`📦 Products from API: ${productsData?.length || 0}`);
+        console.log(`💰 Sales from API: ${salesData?.length || 0}`);
+        console.log(`📋 Expenses from API: ${expensesData?.length || 0}`);
+        
+        // ⚠️ إذا فشل التحميل (بيانات null أو فارغة)، ارجع false
+        if (productsData === null && salesData === null && expensesData === null) {
+            console.warn('⚠️ فشل الاتصال بـ Google Sheets - استخدام البيانات المحلية');
+            return false;
+        }
+        
+        // إذا كانت البيانات فارغة (مش null)، يعني النت شغال لكن Google Sheets فاضي
+        if (productsData !== null && salesData !== null && 
+            productsData.length === 0 && salesData.length === 0) {
+            console.warn('⚠️ Google Sheets فارغ - البيانات المحلية محفوظة');
+            return false;
+        }
+        
+        // 🔄 دمج البيانات من السحابة مع المحلية
+        if (productsData && Array.isArray(productsData)) {
             products = productsData;
-        }
-        
-        if (salesData && hasDatabase) {
-            // الحصول على المبيعات الموجودة
-            const existingSales = await window.db.getAllSales();
-            const existingIds = new Set(existingSales.map(s => s.id));
             
-            // إضافة المبيعات الجديدة فقط
-            for (const sale of salesData) {
-                if (!existingIds.has(sale.id)) {
-                    await window.db.addSale(sale);
+            // ✅ دمج في SQLite (تحديث الموجود، إضافة الجديد)
+            if (hasDatabase && productsData.length > 0) {
+                try {
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    
+                    for (const cloudProduct of productsData) {
+                        const existingProduct = await window.db.getProductById(cloudProduct.id);
+                        
+                        if (existingProduct) {
+                            // المنتج موجود - تحديث
+                            await window.db.updateProduct(cloudProduct.id, cloudProduct);
+                            updatedCount++;
+                        } else {
+                            // منتج جديد - إضافة
+                            await window.db.addProduct(cloudProduct);
+                            addedCount++;
+                        }
+                    }
+                    
+                    console.log(`✅ دمج المنتجات: ${addedCount} جديد، ${updatedCount} محدّث`);
+                } catch (err) {
+                    console.error('❌ خطأ في دمج المنتجات:', err);
                 }
             }
-            sales = salesData;
+            
+            // حفظ في localStorage كنسخة احتياطية
+            saveProductsLocally(products);
+            console.log(`✅ تم دمج ${products.length} منتج من Google Sheets`);
         }
         
-        if (settingsData && hasDatabase) {
-            await window.db.saveAllSettings(settingsData);
+        if (salesData && Array.isArray(salesData)) {
+            sales = salesData;
+            
+            // ✅ دمج في SQLite (تحديث الموجود، إضافة الجديد)
+            if (hasDatabase && salesData.length > 0) {
+                try {
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    
+                    for (const cloudSale of salesData) {
+                        const existingSale = await window.db.getSaleById(cloudSale.id);
+                        
+                        if (existingSale) {
+                            // البيع موجود - تحديث
+                            await window.db.updateSale(cloudSale.id, cloudSale);
+                            updatedCount++;
+                        } else {
+                            // بيع جديد - إضافة
+                            await window.db.addSale(cloudSale);
+                            addedCount++;
+                        }
+                    }
+                    
+                    console.log(`✅ دمج المبيعات: ${addedCount} جديد، ${updatedCount} محدّث`);
+                } catch (err) {
+                    console.error('❌ خطأ في دمج المبيعات:', err);
+                }
+            }
+            
+            // حفظ في localStorage كنسخة احتياطية
+            saveSalesLocally(sales);
+            console.log(`✅ تم دمج ${sales.length} عملية بيع من Google Sheets`);
+        }
+        
+        if (settingsData && Object.keys(settingsData).length > 0) {
+            // ⚠️ SQLite معطل - حفظ في localStorage فقط
+            saveSettingsLocally(settingsData);
         }
         
         // تحميل البيانات الإضافية
         if (typeof loadExpensesFromAPI === 'function') {
             const expenses = await loadExpensesFromAPI();
-            if (expenses && hasDatabase) {
-                for (const expense of expenses) {
-                    await window.db.addExpense(expense);
-                }
+            console.log(`📋 تم جلب ${expenses?.length || 0} مصروف من Google Sheets`);
+            if (expenses && Array.isArray(expenses)) {
                 window.expenses = expenses;
+                
+                // ✅ دمج في SQLite (تحديث الموجود، إضافة الجديد)
+                if (hasDatabase && expenses.length > 0 && typeof window.db.getAllExpenses === 'function') {
+                    try {
+                        let addedCount = 0;
+                        let updatedCount = 0;
+                        
+                        for (const cloudExpense of expenses) {
+                            const existingExpense = await window.db.getExpenseById(cloudExpense.id);
+                            
+                            if (existingExpense) {
+                                // المصروف موجود - تحديث
+                                await window.db.updateExpense(cloudExpense.id, cloudExpense);
+                                updatedCount++;
+                            } else {
+                                // مصروف جديد - إضافة
+                                await window.db.addExpense(cloudExpense);
+                                addedCount++;
+                            }
+                        }
+                        
+                        console.log(`✅ دمج المصروفات: ${addedCount} جديد، ${updatedCount} محدّث`);
+                    } catch (err) {
+                        console.error('❌ خطأ في دمج المصروفات:', err);
+                    }
+                }
+                
+                // حفظ في localStorage كنسخة احتياطية
+                saveExpensesLocally(expenses);
             }
         }
         
-        if (typeof loadCapitalTransactionsFromAPI === 'function') {
-            const transactions = await loadCapitalTransactionsFromAPI();
-            if (transactions && hasDatabase) {
-                for (const transaction of transactions) {
-                    await window.db.addCapitalTransaction(transaction);
-                }
-                window.capitalTransactions = transactions;
-            }
-        }
+        // ✅ نجح التحميل من Google Sheets
+        return true;
         
     } catch (error) {
-        console.error('خطأ في تنزيل البيانات:', error);
+        console.error('❌ خطأ في تنزيل البيانات من Google Sheets:', error);
+        console.log('📂 استخدام البيانات المحلية كـ fallback');
+        return false;
     }
 }
 
@@ -442,27 +587,18 @@ window.addEventListener('online', () => {
     isOnline = true;
     console.log('🌐 تم الاتصال بالإنترنت');
     updateConnectionUI('online');
-    showAlert('success', '✅ تم الاتصال بالإنترنت - جاري المزامنة...');
+    showAlert('success', '✅ تم الاتصال بالإنترنت - البيانات المحلية محفوظة ✅');
     
-    setTimeout(() => {
-        updateConnectionUI('syncing');
-        syncWithCloud().then(() => {
-            updateConnectionUI('online');
-            showAlert('success', '✅ تمت المزامنة بنجاح');
-            updateDashboard();
-            displayProducts();
-            if (typeof displayPOSProducts === 'function') displayPOSProducts();
-        }).catch(() => {
-            updateConnectionUI('online');
-        });
-    }, 1000);
+    // ❌ لا مزامنة تلقائية - النظام SQLite-First
+    // الرفع للسحابة فقط من خلال الـ backup اليومي التلقائي
 });
 
 window.addEventListener('offline', () => {
     isOnline = false;
+    isSyncing = false; // ✅ إيقاف أي مزامنة جارية
     console.log('📵 تم قطع الاتصال بالإنترنت');
     updateConnectionUI('offline');
-    showAlert('warning', '📵 وضع بدون اتصال - ستتم المزامنة عند العودة');
+    showAlert('warning', '📵 وضع بدون اتصال - بياناتك محفوظة محلياً ✅');
 });
 
 // تحديث الحالة الأولية
@@ -545,18 +681,18 @@ function saveToLocalStorage(key, data) {
 
 // ============ مزامنة دورية (كل 5 دقائق) ============
 
-setInterval(() => {
-    if (isOnline && !isSyncing) {
-        console.log('🔄 مزامنة تلقائية...');
-        syncWithCloud();
-    }
-}, 5 * 60 * 1000);
+// ❌ تم تعطيل المزامنة التلقائية كل 5 دقائق
+// النظام الآن SQLite-First - الرفع للسحابة فقط من خلال الـ backup اليومي
+// setInterval(() => {
+//     if (isOnline && !isSyncing) {
+//         console.log('🔄 مزامنة تلقائية...');
+//         syncWithCloud();
+//     }
+// }, 5 * 60 * 1000);
 
-// مزامنة عند إغلاق الصفحة
+// حفظ SQLite عند إغلاق الصفحة
 window.addEventListener('beforeunload', () => {
-    if (isOnline) {
-        syncWithCloud();
-    }
+    // ❌ لا مزامنة مع السحابة - فقط حفظ محلي
     if (hasDatabase) {
         window.db.save();
     }
